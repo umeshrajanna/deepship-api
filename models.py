@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Text, DateTime, Enum as SQLEnum
 from sqlalchemy.sql import func
-from shared.database import Base
+from database import Base
 import enum
 import uuid
 

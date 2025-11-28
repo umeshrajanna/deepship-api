@@ -6,11 +6,11 @@ import json
 import asyncio
 from datetime import datetime
 
-from api.models import SearchJob, JobStatus
-from shared.database import get_db, init_db
-from shared.redis_client import redis_client, get_pubsub
-from shared.config import config
-from workers.tasks import deep_search_task
+from models import SearchJob, JobStatus
+from database import get_db, init_db
+from redis_client import redis_client, get_pubsub
+from config import config
+from tasks import deep_search_task
 
 # Initialize FastAPI app
 app = FastAPI(title="Deep Search API")
