@@ -32,20 +32,43 @@ class ConnectionManager:
         # Map job_id -> pubsub listener task
         self.pubsub_tasks: Dict[str, asyncio.Task] = {}
     
+    # async def connect(self, websocket: WebSocket, job_id: str):
+    #     """Add a WebSocket connection for a job"""
+    #     await websocket.accept()
+        
+    #     if job_id not in self.active_connections:
+    #         self.active_connections[job_id] = set()
+        
+    #     self.active_connections[job_id].add(websocket)
+        
+    #     # Start listening to Redis pub/sub if not already listening
+    #     if job_id not in self.pubsub_tasks:
+    #         task = asyncio.create_task(self._listen_to_redis(job_id))
+    #         self.pubsub_tasks[job_id] = task
+    
     async def connect(self, websocket: WebSocket, job_id: str):
         """Add a WebSocket connection for a job"""
-        await websocket.accept()
+        print(f"[MANAGER] 🔌 Connect called for job_id: {job_id}")
+        
+        # await websocket.accept()
+        print(f"[MANAGER] ✅ WebSocket accepted")
         
         if job_id not in self.active_connections:
             self.active_connections[job_id] = set()
+            print(f"[MANAGER] 📝 Created new connection set for {job_id}")
         
         self.active_connections[job_id].add(websocket)
+        print(f"[MANAGER] 👥 Total connections for {job_id}: {len(self.active_connections[job_id])}")
         
-        # Start listening to Redis pub/sub if not already listening
+        # Start listening to Redis if not already listening
         if job_id not in self.pubsub_tasks:
+            print(f"[MANAGER] 🚀 Creating Redis listener task for {job_id}")
             task = asyncio.create_task(self._listen_to_redis(job_id))
             self.pubsub_tasks[job_id] = task
-    
+            print(f"[MANAGER] ✅ Task created: {task}")
+        else:
+            print(f"[MANAGER] ♻️ Redis listener already exists for {job_id}")
+            
     def disconnect(self, websocket: WebSocket, job_id: str):
         """Remove a WebSocket connection"""
         if job_id in self.active_connections:
@@ -59,18 +82,67 @@ class ConnectionManager:
                     self.pubsub_tasks[job_id].cancel()
                     del self.pubsub_tasks[job_id]
     
+    # async def _listen_to_redis(self, job_id: str):
+    #     """Listen to Redis pub/sub for a specific job and forward to WebSockets"""
+    #     pubsub = get_pubsub()
+    #     channel = f"job:{job_id}"
+        
+    #     try:
+    #         pubsub.subscribe(channel)
+            
+    #         # Listen for messages
+    #         for message in pubsub.listen():
+    #             if message["type"] == "message":
+    #                 data = message["data"]
+                    
+    #                 # Send to all connected WebSockets for this job
+    #                 if job_id in self.active_connections:
+    #                     disconnected = set()
+                        
+    #                     for websocket in self.active_connections[job_id]:
+    #                         try:
+    #                             await websocket.send_text(data)
+    #                         except Exception:
+    #                             disconnected.add(websocket)
+                        
+    #                     # Clean up disconnected WebSockets
+    #                     for ws in disconnected:
+    #                         self.disconnect(ws, job_id)
+                        
+    #                     # Check if job is complete
+    #                     try:
+    #                         msg = json.loads(data)
+    #                         if msg.get("type") in ["complete", "error"]:
+    #                             # Job finished, can stop listening after a delay
+    #                             await asyncio.sleep(5)
+    #                             break
+    #                     except json.JSONDecodeError:
+    #                         pass
+                
+    #     except asyncio.CancelledError:
+    #         pass
+    #     finally:
+    #         pubsub.unsubscribe(channel)
+    #         pubsub.close()
+
     async def _listen_to_redis(self, job_id: str):
         """Listen to Redis pub/sub for a specific job and forward to WebSockets"""
         pubsub = get_pubsub()
         channel = f"job:{job_id}"
         
+        print(f"[WS] 🎧 Subscribing to channel: {channel}")
+        
         try:
             pubsub.subscribe(channel)
+            print(f"[WS] ✅ Subscribed successfully")
             
-            # Listen for messages
-            for message in pubsub.listen():
-                if message["type"] == "message":
+            # Use get_message() instead of listen() for async compatibility
+            while True:
+                message = pubsub.get_message(ignore_subscribe_messages=True)
+                
+                if message and message["type"] == "message":
                     data = message["data"]
+                    print(f"[WS] 📨 Got message, forwarding to {len(self.active_connections.get(job_id, []))} clients")
                     
                     # Send to all connected WebSockets for this job
                     if job_id in self.active_connections:
@@ -79,7 +151,9 @@ class ConnectionManager:
                         for websocket in self.active_connections[job_id]:
                             try:
                                 await websocket.send_text(data)
-                            except Exception:
+                                print(f"[WS] ✅ Sent to client")
+                            except Exception as e:
+                                print(f"[WS] ❌ Failed to send: {e}")
                                 disconnected.add(websocket)
                         
                         # Clean up disconnected WebSockets
@@ -90,18 +164,22 @@ class ConnectionManager:
                         try:
                             msg = json.loads(data)
                             if msg.get("type") in ["complete", "error"]:
-                                # Job finished, can stop listening after a delay
+                                print(f"[WS] 🏁 Job finished, stopping listener in 5s")
                                 await asyncio.sleep(5)
                                 break
                         except json.JSONDecodeError:
                             pass
                 
+                # Small delay to prevent CPU spinning
+                await asyncio.sleep(0.01)
+                    
         except asyncio.CancelledError:
-            pass
+            print(f"[WS] ⚠️ Listener cancelled for {job_id}")
         finally:
+            print(f"[WS] 🔌 Unsubscribing from {channel}")
             pubsub.unsubscribe(channel)
             pubsub.close()
-
+        
 manager = ConnectionManager()
 
 @app.on_event("startup")
@@ -191,6 +269,80 @@ async def get_search_status(
     
     return response
 
+# @app.websocket("/ws")
+# async def websocket_endpoint(websocket: WebSocket):
+#     """
+#     WebSocket endpoint for real-time updates
+    
+#     Client should send: {"action": "subscribe", "job_id": "xxx"}
+#     """
+#     await websocket.accept()
+#     current_job_id = None
+    
+#     try:
+#         while True:
+#             # Receive message from client
+#             data = await websocket.receive_text()
+            
+#             try:
+#                 message = json.loads(data)
+#                 action = message.get("action")
+                
+#                 if action == "subscribe":
+#                     job_id = message.get("job_id")
+                    
+#                     if not job_id:
+#                         await websocket.send_json({
+#                             "type": "error",
+#                             "content": "job_id is required"
+#                         })
+#                         continue
+                    
+#                     # Unsubscribe from previous job if any
+#                     if current_job_id:
+#                         manager.disconnect(websocket, current_job_id)
+                    
+#                     # Subscribe to new job
+#                     current_job_id = job_id
+#                     await manager.connect(websocket, job_id)
+                    
+#                     await websocket.send_json({
+#                         "type": "subscribed",
+#                         "content": f"Subscribed to job {job_id}"
+#                     })
+                
+#                 elif action == "unsubscribe":
+#                     if current_job_id:
+#                         manager.disconnect(websocket, current_job_id)
+#                         current_job_id = None
+                    
+#                     await websocket.send_json({
+#                         "type": "unsubscribed",
+#                         "content": "Unsubscribed successfully"
+#                     })
+                
+#                 elif action == "ping":
+#                     await websocket.send_json({
+#                         "type": "pong",
+#                         "content": "Connection alive"
+#                     })
+                
+#                 else:
+#                     await websocket.send_json({
+#                         "type": "error",
+#                         "content": f"Unknown action: {action}"
+#                     })
+                    
+#             except json.JSONDecodeError:
+#                 await websocket.send_json({
+#                     "type": "error",
+#                     "content": "Invalid JSON"
+#                 })
+    
+#     except WebSocketDisconnect:
+#         if current_job_id:
+#             manager.disconnect(websocket, current_job_id)
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """
@@ -198,6 +350,7 @@ async def websocket_endpoint(websocket: WebSocket):
     
     Client should send: {"action": "subscribe", "job_id": "xxx"}
     """
+    print("[WS_ENDPOINT] 🔌 New WebSocket connection")
     await websocket.accept()
     current_job_id = None
     
@@ -205,13 +358,16 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Receive message from client
             data = await websocket.receive_text()
+            print(f"[WS_ENDPOINT] 📩 Received: {data}")
             
             try:
                 message = json.loads(data)
                 action = message.get("action")
+                print(f"[WS_ENDPOINT] 🎬 Action: {action}")
                 
                 if action == "subscribe":
                     job_id = message.get("job_id")
+                    print(f"[WS_ENDPOINT] 📌 Subscribe to job_id: {job_id}")
                     
                     if not job_id:
                         await websocket.send_json({
@@ -222,18 +378,22 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     # Unsubscribe from previous job if any
                     if current_job_id:
+                        print(f"[WS_ENDPOINT] 🔄 Unsubscribing from previous: {current_job_id}")
                         manager.disconnect(websocket, current_job_id)
                     
                     # Subscribe to new job
                     current_job_id = job_id
+                    print(f"[WS_ENDPOINT] ➡️ Calling manager.connect()")
                     await manager.connect(websocket, job_id)
                     
                     await websocket.send_json({
                         "type": "subscribed",
                         "content": f"Subscribed to job {job_id}"
                     })
+                    print(f"[WS_ENDPOINT] ✅ Subscription confirmed")
                 
                 elif action == "unsubscribe":
+                    print(f"[WS_ENDPOINT] 🔕 Unsubscribe action")
                     if current_job_id:
                         manager.disconnect(websocket, current_job_id)
                         current_job_id = None
@@ -244,27 +404,32 @@ async def websocket_endpoint(websocket: WebSocket):
                     })
                 
                 elif action == "ping":
+                    print(f"[WS_ENDPOINT] 🏓 Ping received")
                     await websocket.send_json({
                         "type": "pong",
                         "content": "Connection alive"
                     })
                 
                 else:
+                    print(f"[WS_ENDPOINT] ❓ Unknown action: {action}")
                     await websocket.send_json({
                         "type": "error",
                         "content": f"Unknown action: {action}"
                     })
                     
             except json.JSONDecodeError:
+                print(f"[WS_ENDPOINT] ❌ Invalid JSON received")
                 await websocket.send_json({
                     "type": "error",
                     "content": "Invalid JSON"
                 })
     
     except WebSocketDisconnect:
+        print(f"[WS_ENDPOINT] 🔌 WebSocket disconnected")
         if current_job_id:
+            print(f"[WS_ENDPOINT] 🧹 Cleaning up job: {current_job_id}")
             manager.disconnect(websocket, current_job_id)
-
+            
 @app.get("/")
 async def root():
     """Root endpoint with API information"""

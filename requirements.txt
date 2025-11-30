@@ -1,22 +1,8 @@
-# requirements-api.txt - Lightweight dependencies for API service
-# No Playwright, no ML models, no browser dependencies
-
-# Core API framework
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-websockets==12.0
-python-multipart==0.0.20
-pydantic==2.10.6
-
-# Database
+# Essential only
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+celery==5.4.0
+redis==5.2.0
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
-
-# Redis and Celery (for task dispatch only, not running workers)
-redis==5.2.1
-celery==5.4.0
-
-# HTTP client
-requests==2.32.3
-
-# That's it! ~200MB total
+python-dotenv==1.0.1

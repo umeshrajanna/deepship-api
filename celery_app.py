@@ -22,9 +22,11 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
+    
+    task_default_queue='llm_worker_queue',
 )
 
 # Task routes (optional - for dedicated queues)
 celery_app.conf.task_routes = {
-    "tasks.deep_search_task": {"queue": "celery"},
+    "tasks.deep_search_task": {"queue": "llm_worker_queue"},
 }

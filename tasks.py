@@ -3,21 +3,8 @@
 
 from celery import Celery
 import os
+from celery_app import celery_app
 
-# Minimal Celery app configuration
-celery_app = Celery(
-    'deepship',
-    broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379'),
-    backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379')
-)
-
-celery_app.conf.update(
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='UTC',
-    enable_utc=True,
-)
 
 # Task signature - just for dispatching, no implementation
 @celery_app.task(bind=True, name='tasks.deep_search_task')
