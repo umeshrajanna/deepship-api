@@ -1,8 +1,84 @@
-# Essential only
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
+# # Essential only
+# fastapi==0.115.5
+# uvicorn[standard]==0.32.1
 celery==5.4.0
-redis==5.2.0
-sqlalchemy==2.0.36
-psycopg2-binary==2.9.10
-python-dotenv==1.0.1
+# redis==5.2.0
+# sqlalchemy==2.0.36
+# psycopg2-binary==2.9.10
+# python-dotenv==1.0.1
+# anthropic==0.34.2 
+# aiohttp==3.10.11    
+# python-jose[cryptography]
+# passlib[bcrypt]
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# WebSocket support
+websockets==12.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Redis
+redis[hiredis]==5.0.1
+
+# Async & HTTP
+aiohttp==3.9.1
+httpx==0.25.2
+
+# AI/LLM
+anthropic==0.39.0
+
+# Search APIs
+google-search-results==2.4.2
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib==1.7.4
+bcrypt==4.1.2
+
+# PDF Generation
+reportlab==4.0.7
+
+# Utilities
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# Production server
+gunicorn==21.2.0
+beautifulsoup4==4.12.2
+# spacy==3.7.2
+# en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+# chromadb==0.4.22
+openai
+# sentence-transformers==2.2.2
+markdown==3.5.1
+python-docx==1.1.0
+# playwright 
+pandas==2.0.3
+matplotlib==3.7.2
+cairosvg
+
+# Chart Extraction Dependencies
+Pillow>=10.0.0
+requests>=2.31.0
+lxml>=4.9.0
+pdfplumber==0.11.0
+openpyxl==3.1.2
+python-multipart==0.0.6
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+python-jose[cryptography]
+ 
+passlib[bcrypt]
+aiosmtplib
+email-validator
+sib-api-v3-sdk==7.6.0
+resend==2.0.0
