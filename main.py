@@ -11,17 +11,63 @@ from database import get_db, init_db
 from redis_client import redis_client, get_pubsub
 from config import config
 from tasks import deep_search_task
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # logger.info("🚀 Starting application...")
+    
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("DB URL IS -> " + DATABASE_URL)
+        # logger.info("✅ Database initialized")
+    except Exception as e:
+        logger.error(f"❌ Database initialization failed: {e}")
+    
+    try:
+        await conversation_manager.connect_redis()
+        # logger.info("✅ Redis connected")
+    except Exception as e:
+        logger.warning(f"⚠️ Redis connection failed: {e}")
+    
+    # logger.info("✅ Application started")
+    
+    yield
+    
+    # logger.info("🛑 Shutting down...")
+    await conversation_manager.disconnect_redis()
+    # logger.info("✅ Shutdown complete")
 
 # Initialize FastAPI app
-app = FastAPI(title="Deep Search API")
+app = FastAPI(title="Deep Search API", lifespan=lifespan)
 
 # CORS middleware
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[
+#         "http://localhost:8084",
+#         "http://localhost:8082",
+#         "https://noirai-production.up.railway.app",
+#     ],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=[
+        "http://localhost:8084",      # Your frontend port
+        "http://127.0.0.1:8084",
+        "http://localhost:8082",
+        "http://127.0.0.1:8082",
+        "http://localhost:3000",      # Common dev ports
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # WebSocket connection manager
@@ -487,11 +533,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 import time
 from collections import defaultdict
 import re
-import spacy 
- 
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+# import spacy 
+  
 # from reportlab.lib.units import inch
 from io import BytesIO
 import markdown
@@ -878,6 +921,7 @@ class Message(Base):
     assets = Column(Text, nullable=True)  # ADD THIS LINE
     lab_mode = Column(Boolean, default=False)  # ADD THIS LINE
     app = Column(Text, nullable=True)
+    celery_task_id = Column(String, nullable=True, index=True)
     
 class Reaction(Base):
     __tablename__ = "reactions"
@@ -936,7 +980,7 @@ class ConversationManager:
         self.claude_client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
         
         logger.info("OPEN AI KEY \n\n"+ OPENAI_KEY)
-        self.openai_client = AsyncOpenAI(api_key = OPENAI_KEY) 
+        # self.openai_client = AsyncOpenAI(api_key = OPENAI_KEY) 
         
         self.redis_url = redis_url
         self.redis = None
@@ -1078,30 +1122,6 @@ class ConversationManager:
 conversation_manager = ConversationManager()
 
 # Lifespan
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # logger.info("🚀 Starting application...")
-    
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("DB URL IS -> " + DATABASE_URL)
-        # logger.info("✅ Database initialized")
-    except Exception as e:
-        logger.error(f"❌ Database initialization failed: {e}")
-    
-    try:
-        await conversation_manager.connect_redis()
-        # logger.info("✅ Redis connected")
-    except Exception as e:
-        logger.warning(f"⚠️ Redis connection failed: {e}")
-    
-    # logger.info("✅ Application started")
-    
-    yield
-    
-    # logger.info("🛑 Shutting down...")
-    await conversation_manager.disconnect_redis()
-    # logger.info("✅ Shutdown complete")
 
 # # FastAPI app
 # app = FastAPI(title="Enhanced Chat System", lifespan=lifespan)
@@ -1214,17 +1234,616 @@ async def send_chat_message(
 
 @app.options("/chat/send/stream")
 async def chat_stream_options(request: Request):
-    origin = request.headers.get("origin", "*")
+    """Handle preflight CORS request"""
     return Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, *",
+            "Access-Control-Max-Age": "86400"
         }
     )
  
+# @app.post("/chat/send/stream") 
+# async def send_chat_message_stream(
+#     content: str = Form(...),
+#     conversation_id: Optional[str] = Form(None),
+#     deep_search: Optional[bool] = Form(False),
+#     lab_mode: Optional[bool] = Form(False),
+#     files: List[UploadFile] = File(default=[]),
+#     db: Session = Depends(get_db),
+#     current_user: Optional[dict] = Depends(get_current_user)
+# ): 
+ 
+#     message = MessageSend(
+#         content=content,
+#         conversation_id=conversation_id,
+#         deep_search=deep_search,
+#         lab_mode=lab_mode
+#     )
+    
+#     conversation_id = message.conversation_id
+    
+#     try:
+        
+#         newConversation = False
+#         # Auto-create conversation if needed
+#         if not conversation_id:
+#             print("NO CONV FOUND")
+#             conversation = Conversation(
+#                 user_id=uuid.UUID(current_user["user_id"]) if current_user else None,
+#                 title="New Conversation",
+#                 is_anonymous=current_user is None
+#             )
+#             newConversation = True
+#             db.add(conversation)
+#             db.commit()
+#             db.refresh(conversation)
+#             conversation_id = str(conversation.id)
+#             conv = conversation
+#             print("CREATED A CONV")
+#         else:
+#             print("CONV FOUND")
+#             conv = db.query(Conversation).filter(Conversation.id == uuid.UUID(conversation_id)).first()
+            
+#             if not conv:
+#                 raise HTTPException(status_code=404, detail="Conversation not found")
+        
+#     except Exception as e:
+#         print("RAISED EXCEPTION WHEN CREATING A NEW CONV")
+        
+#     # Check anonymous limit
+#     if conv.is_anonymous and conv.message_count >= 1000:
+#         # logger.info("Hit anonymous limit, returning limit message")
+#         async def limit_response():
+#             yield json.dumps({
+#                 "type": "error",
+#                 "message": "Message limit reached",
+#                 "limit_reached": True
+#             }) + "\n"
+#             yield json.dumps({"type": "done"}) + "\n"
+        
+#         return StreamingResponse(
+          
+#             limit_response(),
+#             media_type="text/plain",
+#             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "*"}
+#         )
+     
+    
+#     async def stream_response(  newConversation, uploaded_files=None):
+              
+        
+#         """
+#         Complete streaming response function with:
+#         - File upload support (PDF, CSV, Excel, TXT)
+#         - Deep search with categorized sources
+#         - Lab mode with asset extraction
+#         - Normal search mode
+#         """
+
+#         from scraper_stable_optimized import search_with_web
+#         finalSources = []
+#         extracted_assets = []
+#         file_contents = [] 
+#         extracted_all_tables = []
+#         search_content = ""
+#         sources = None
+#         charttables = None
+#         alltables = None 
+        
+#         try:
+#             is_lab_mode = message.lab_mode
+#             is_deep_search = message.deep_search
+            
+#             # === PROCESS UPLOADED FILES ===
+#             if uploaded_files and len(uploaded_files) > 0:
+#                 # logger.info(f"[FILES] Processing {len(uploaded_files)} uploaded files")
+                
+#                 yield json.dumps({
+#                     "type": "reasoning",
+#                     "step": "File Processing",
+#                     "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
+#                     "timestamp": datetime.now(timezone.utc).isoformat()
+#                 }) + "\n"
+#                 await asyncio.sleep(0.2)
+                
+#                 for idx, file in enumerate(uploaded_files, 1):
+#                     try:
+#                         # Read file content
+#                         content_bytes = await file.read()
+#                         file_size_kb = len(content_bytes) / 1024
+                        
+#                         # logger.info(f"[FILES] Processing file {idx}: {file.filename} ({file_size_kb:.1f} KB, type: {file.content_type})")
+                        
+#                         # Process based on file type
+#                         if file.content_type == "application/pdf":
+#                             # Extract text from PDF
+#                             import pdfplumber
+#                             from io import BytesIO
+                            
+#                             text_content = ""
+#                             try:
+#                                 with pdfplumber.open(BytesIO(content_bytes)) as pdf:
+#                                     # logger.info(f"[FILES] PDF has {len(pdf.pages)} pages")
+#                                     for page_num, page in enumerate(pdf.pages, 1):
+#                                         page_text = page.extract_text()
+#                                         if page_text:
+#                                             text_content += f"\n--- Page {page_num} ---\n{page_text}\n"
+                                
+#                                 file_contents.append({
+#                                     "filename": file.filename,
+#                                     "type": "pdf",
+#                                     "pages": len(pdf.pages),
+#                                     "content": text_content[:10000]  # Limit to 10k chars
+#                                 })
+#                                 # logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from PDF")
+                                
+#                             except Exception as e:
+#                                 logger.error(f"[FILES] PDF extraction error: {e}")
+#                                 file_contents.append({
+#                                     "filename": file.filename,
+#                                     "type": "pdf",
+#                                     "content": f"Error extracting PDF: {str(e)}"
+#                                 })
+                            
+#                         elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
+#                                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
+#                             # Handle CSV/Excel
+#                             import pandas as pd
+#                             from io import BytesIO
+                            
+#                             try:
+#                                 if file.content_type == "text/csv":
+#                                     df = pd.read_csv(BytesIO(content_bytes))
+#                                 else:
+#                                     df = pd.read_excel(BytesIO(content_bytes))
+                                
+#                                 # logger.info(f"[FILES] Loaded dataframe: {len(df)} rows, {len(df.columns)} columns")
+                                
+#                                 # Convert to text summary
+#                                 summary = f"File: {file.filename}\n"
+#                                 summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
+#                                 summary += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
+#                                 summary += f"First 10 rows:\n{df.head(10).to_string()}\n\n"
+                                
+#                                 if len(df) > 10:
+#                                     summary += f"Summary Statistics:\n{df.describe().to_string()}"
+                                
+#                                 file_contents.append({
+#                                     "filename": file.filename,
+#                                     "type": "tabular",
+#                                     "rows": len(df),
+#                                     "columns": len(df.columns),
+#                                     "content": summary[:10000]
+#                                 })
+                                
+#                                 # logger.info(f"[FILES] ✓ Processed tabular data")
+                                
+#                                 # Add to extracted_assets for lab mode
+#                                 # if is_lab_mode:
+#                                 #     extracted_assets.append({
+#                                 #         "type": "table",
+#                                 #         "filename": file.filename,
+#                                 #         "rows": len(df),
+#                                 #         "columns": df.columns.tolist(),
+#                                 #         "preview": df.head(50).to_dict()
+#                                 #     })
+#                                     # logger.info(f"[LAB MODE] Added table to assets")
+                                    
+#                             except Exception as e:
+#                                 logger.error(f"[FILES] Pandas error: {e}")
+#                                 try:
+#                                     text = content_bytes.decode('utf-8', errors='ignore')
+#                                     file_contents.append({
+#                                         "filename": file.filename,
+#                                         "type": "text",
+#                                         "content": text[:10000]
+#                                     })
+#                                 except:
+#                                     file_contents.append({
+#                                         "filename": file.filename,
+#                                         "type": "unknown",
+#                                         "content": f"Error processing file: {str(e)}"
+#                                     })
+                            
+#                         elif file.content_type == "text/plain":
+#                             # Plain text file
+#                             try:
+#                                 text_content = content_bytes.decode('utf-8', errors='ignore')
+#                                 file_contents.append({
+#                                     "filename": file.filename,
+#                                     "type": "text",
+#                                     "content": text_content[:10000]
+#                                 })
+#                                 # logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from text file")
+#                             except Exception as e:
+#                                 logger.error(f"[FILES] Text file error: {e}")
+#                                 file_contents.append({
+#                                     "filename": file.filename,
+#                                     "type": "text",
+#                                     "content": f"Error reading text file: {str(e)}"
+#                                 })
+                        
+#                         else:
+#                             logger.warning(f"[FILES] Unsupported file type: {file.content_type}")
+#                             file_contents.append({
+#                                 "filename": file.filename,
+#                                 "type": "unsupported",
+#                                 "content": f"Unsupported file type: {file.content_type}"
+#                             })
+#                             continue
+                        
+#                         # Send success notification
+#                         yield json.dumps({
+#                             "type": "reasoning",
+#                             "step": f"File {idx} Processed",
+#                             "content": f"✓ Extracted content from {file.filename}",
+#                             "timestamp": datetime.now(timezone.utc).isoformat()
+#                         }) + "\n"
+#                         await asyncio.sleep(0.1)
+                        
+#                     except Exception as e:
+#                         logger.error(f"[FILES] Error processing {file.filename}: {e}", exc_info=True)
+#                         yield json.dumps({
+#                             "type": "reasoning",
+#                             "step": f"File {idx} Error",
+#                             "content": f"Failed to process {file.filename}: {str(e)}",
+#                             "timestamp": datetime.now(timezone.utc).isoformat()
+#                         }) + "\n"
+                            
+#             # Send metadata
+#             metadata = json.dumps({
+#                 "type": "metadata",
+#                 "conversation_id": conversation_id,
+#                 "is_anonymous": conv.is_anonymous,
+#                 "deep_search": is_deep_search,
+#                 "lab_mode": is_lab_mode,
+#                 "files_processed": len(file_contents)
+#             }) + "\n"
+#             yield metadata
+            
+#             # === GET CONVERSATION HISTORY ===
+#             db_messages = db.query(Message).filter(
+#                 Message.conversation_id == uuid.UUID(conversation_id)
+#             ).order_by(Message.created_at).all()
+            
+#             messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
+            
+#             # === TRACK SOURCES AND REASONING STEPS ===
+#             collected_sources = []
+#             reasoning_steps = []
+#             collected_snippets = []
+#             overview_content = []
+#             overview_sources_map = {}  # NEW: Track sources per query
+#             collected_sources = []
+#             full_response = "APP"
+#             finalSources = []
+#             app = None
+#             combined_overview = ""
+#             final_prompt = ""
+#             generateApp = True
+#             transformed_query = ""
+            
+
+#             conversation = None
+#             # message.deep_search = False
+#             # message.lab_mode = True
+             
+#             print("IS LAB -> " + str(message.lab_mode))
+#             print("IS DEEP SEARCH -> " + str(message.deep_search))
+ 
+#             if message.lab_mode:
+#                 from lab_claude_version_extenal import EnhancedHTMLAppGenerator
+#                 generator = EnhancedHTMLAppGenerator(verbose=False)
+#                 # app,messages_list = await generator.develop_app(
+#                 #     message.content,
+#                 #     conversation_history=messages_list                
+#                 # )
+                
+#                 async for result in generator.develop_app(message.content, messages_list):
+#                     if result.get("type") == "sources":
+#                         content = result.get("content")
+#                         urls = content.get("urls")
+#                         transformed_query = content.get("transformed_query")
+#                         finalSources.append(urls)
+                            
+#                         # transformed_query = text                   
+#                         step = {
+#                             "type": "reasoning",
+#                             "step": "Sources Found",
+#                             "content": transformed_query,
+#                             "found_sources": len(urls),
+#                             "sources": urls,
+#                             "query": transformed_query,  # NEW
+#                             "category": "Web Search",  # NEW
+#                             "timestamp": datetime.now(timezone.utc).isoformat()
+#                         }
+#                         yield json.dumps(step) + "\n" 
+#                         reasoning_steps.append(step) 
+#                         # yield json.dumps(content) + "\n "
+#                     if result.get("type") == "reasoning":
+#                         step = {
+#                             "type": "reasoning",
+#                             "step": result.get("content"),
+#                             "content": result.get("content"),
+#                             "found_sources": 0,
+#                             "sources": [],
+#                             # "query": transformed_query,  # NEW
+#                             # "category": "Web Search",  # NEW
+#                             "timestamp": datetime.now(timezone.utc).isoformat()
+#                         }
+#                         yield json.dumps(step) + "\n" 
+#                         reasoning_steps.append(step)
+#                         # yield json.dumps(result) + "\n"
+#                     if result.get("type") == "html":
+#                         app = result.get("content")
+#                     if result.get("type") == "analysis_summary":
+#                         full_response = result.get("content")
+#                         # yield {"type":"content", "content":analysis_summary}
+#                     if result.get("type") == "done":
+#                         yield json.dumps(result) + "\n "  
+                
+#                 print("Generated app -> " + str(len(app)))
+#                 # try:
+#                 #     print("Developing app")
+#                 #     md1, conversation = await gen.develop_report(
+#                 #     message.content,
+#                 #     conversation_history=messages_list,
+#                 #     use_multi_stage=True,
+#                 #     enable_scraping=True,
+#                 #     return_conversation=True 
+#                 # )
+#                 #     print("MD developed -> " + str(len(md1)))
+#                 #     app = await gen._generate_html(md1)         
+#                 #     print("APP Developed -> " + str(app))                      
+#                 # except Exception as e:
+#                 #     print("Exception when developing app -> " + str(e))
+#             # elif message.deep_search:
+#             #     from deep_search import deep_search_chat_agent
+#             #     user_prompt =   message.content
+#             #     async for results in deep_search_chat_agent(user_prompt,messages_list,newConversation):
+                    
+#             #         try:
+#             #             if results.get("status") == "assets":
+#             #                 charttables = results.get("content", [])
+#             #                 extracted_assets.extend(charttables)
+                            
+#             #             if results.get("status") == "query_transformed":                         
+                            
+#             #                 content = results.get("content", "")    
+#             #                 transformed_query = content.get("search_query")
+#             #                 urls = content.get("urls")
+#             #                 finalSources.append(urls)
+                             
+#             #                 # transformed_query = text                   
+#             #                 step = {
+#             #                     "type": "reasoning",
+#             #                     "step": "Sources Found",
+#             #                     "content": transformed_query,
+#             #                     "found_sources": len(urls),
+#             #                     "sources": urls,
+#             #                     "query": transformed_query,  # NEW
+#             #                     "category": "Web Search",  # NEW
+#             #                     "timestamp": datetime.now(timezone.utc).isoformat()
+#             #                 }
+#             #                 yield json.dumps(step) + "\n" 
+#             #                 reasoning_steps.append(step) 
+                            
+#             #             if results.get("status") == "single_prompt_result":
+                            
+#             #                 content = results.get("content")
+#             #                 answer = content.get("answer") 
+                            
+#             #                 yield json.dumps({"type": "content", "text": answer})  + "\n"
+#             #                 full_response += answer
+                            
+#             #         except Exception as e:
+#             #             print("exception while yielding -> "+ str(e))
+#             elif message.deep_search:
+#                 from deep_search_claude_version_yield_statements import EnhancedMarkdownReportGenerator
+#                 generator = EnhancedMarkdownReportGenerator()
+#                 async for result in generator.develop_report(message.content, messages_list):
+#                     if result.get("type") == "sources":
+#                         content = result.get("content")
+#                         urls = content.get("urls")
+#                         transformed_query = content.get("transformed_query")
+#                         finalSources.append(urls)
+                            
+#                         # transformed_query = text                   
+#                         step = {
+#                             "type": "reasoning",
+#                             "step": "Sources Found",
+#                             "content": transformed_query,
+#                             "found_sources": len(urls),
+#                             "sources": urls,
+#                             "query": transformed_query,  # NEW
+#                             "category": "Web Search",  # NEW
+#                             "timestamp": datetime.now(timezone.utc).isoformat()
+#                         }
+#                         yield json.dumps(step) + "\n" 
+#                         reasoning_steps.append(step) 
+#                         # yield json.dumps(content) + "\n "
+#                     if result.get("type") == "reasoning":
+#                         step = {
+#                             "type": "reasoning",
+#                             "step": result.get("content"),
+#                             "content": result.get("content"),
+#                             "found_sources": 0,
+#                             "sources": [],
+#                             # "query": transformed_query,  # NEW
+#                             # "category": "Web Search",  # NEW
+#                             "timestamp": datetime.now(timezone.utc).isoformat()
+#                         }
+#                         yield json.dumps(step) + "\n" 
+#                         reasoning_steps.append(step)
+#                         # yield json.dumps(result) + "\n"
+#                     if result.get("type") == "markdown":
+#                         app = result.get("content")
+#                     if result.get("type") == "analysis_summary":
+#                         full_response = result.get("content")
+#                         # yield {"type":"content", "content":analysis_summary}
+#                     if result.get("type") == "done":
+#                         yield json.dumps(content) + "\n "
+                     
+#                 # md = await generator.develop_report(message.content, messages_list)                                
+#                 # yield json.dumps({"type": "content", "text": md})  + "\n"
+#             else: 
+                  
+#                 from simple_search import simple_search_chat_agent
+#                 user_prompt =   message.content
+                
+#                 async for results in simple_search_chat_agent(user_prompt,messages_list):
+                    
+#                     try:
+#                         data = json.loads(results)
+                        
+#                         if data.get("type") == "transformed_query":
+#                             text = data.get("query", "")                             
+#                             transformed_query = text
+                            
+#                         if data.get("type") == "content":
+#                             text = data.get("text", "")
+#                             yield json.dumps({"type": "content", "text": text})  + "\n"
+#                             full_response += text
+                            
+#                         if data.get("type") == "sources":
+               
+#                             urls = data.get("urls", "")
+                          
+#                             step = {
+#                                 "type": "reasoning",
+#                                 "step": "Sources Found",
+#                                 "content": transformed_query,
+#                                 "found_sources": len(urls),
+#                                 "sources": urls,
+#                                 "query": transformed_query,  # NEW
+#                                 "category": "Web Search",  # NEW
+#                                 "timestamp": datetime.now(timezone.utc).isoformat()
+#                             }
+#                             yield json.dumps(step) + "\n" 
+#                             reasoning_steps.append(step)
+#                             finalSources.append(urls)
+                            
+#                     except Exception as e:
+#                         print("exception while yielding -> "+ str(e))
+                        
+#                 # === SIMPLE SEARCH MODE ===
+#                 # full_response = ""
+#                 # from scraper_stable_optimized import stream_with_web_results  
+                
+#                 # user_prompt = ""
+#                 # if file_contents:
+#                 #     user_prompt += "\n\n=== UPLOADED FILES ===\n"
+#                 #     for file_info in file_contents:
+#                 #         user_prompt += f"\n--- {file_info['filename']} ({file_info['type']}) ---\n"
+#                 #         user_prompt += file_info['content']
+#                 #         user_prompt += "\n" + "="*50 + "\n"
+#                 #     user_prompt += "\nPlease use the uploaded files content above in answering the prompt.\n\n"
+                
+#                 # user_prompt = ""    
+#                 # user_prompt +=   message.content
+                
+#                 # async for results in stream_with_web_results(user_prompt,messages_list):
+                    
+#                 #     # Process web search results
+#                 #     if not isinstance(results[0], Exception):
+#                 #         search_content, sources = results[0], results[1]
+#                 #         collected_sources = sources if sources else []
+#                 #         if sources:
+#                 #             finalSources.extend(sources)
+#                 #     else:
+#                 #         search_content = ""
+#                 #         collected_sources = []
+                
+#                 #     if collected_sources:
+#                 #         # step = {
+#                 #         #     "type": "reasoning",
+#                 #         #     "step": "Sources Found",
+#                 #         #     "content": f"Retrieved {len(collected_sources)} sources",
+#                 #         #     "sources": collected_sources,
+#                 #         #     "timestamp": datetime.now(timezone.utc).isoformat()
+#                 #         # }
+                        
+#                 #         step = {
+#                 #             "type": "reasoning",
+#                 #             "step": "Sources Found",
+#                 #             "content": message.content,
+#                 #             "found_sources": len(collected_sources),
+#                 #             "sources": collected_sources,
+#                 #             "query": message.content,  # NEW
+#                 #             "category": "Overview",  # NEW
+#                 #             "timestamp": datetime.now(timezone.utc).isoformat()
+#                 #         }
+#                 #         reasoning_steps.append(step)
+#                 #         yield json.dumps(step) + "\n"
+#                 #         await asyncio.sleep(0.2)
+                        
+#                 #     if search_content:
+#                 #         print("yielding-> " + search_content ) 
+#                 #         yield json.dumps({"type": "content", "text": search_content}) + "\n"
+#                 #         full_response += search_content
+
+#             # === SAVE TO DATABASE ===
+            
+#             # Save user message
+#             user_msg = Message(
+#                 conversation_id=uuid.UUID(conversation_id),
+#                 role="user",
+#                 content=message.content,
+#                 sources=None,
+#                 reasoning_steps=None,
+#                 assets=None,
+#                 lab_mode=is_lab_mode,
+#                 has_file=len(file_contents) > 0,
+#                 file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
+#             )
+#             db.add(user_msg) 
+#             print("SAVED USER MSG , CONV ID -> " + conversation_id) 
+            
+#             assistant_msg = Message(
+#                 conversation_id=uuid.UUID(conversation_id),
+#                 role="assistant",
+#                 content=full_response,
+#                 sources=json.dumps(finalSources) if finalSources else None,
+#                 reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
+#                 assets=json.dumps(extracted_assets) if extracted_assets else None,
+#                 lab_mode=is_lab_mode,
+#                 app= app if app else None
+#             )
+#             db.add(assistant_msg)
+            
+#             print("SAVED ASSISTANT MSG")
+#             # Update conversation metadata
+#             conv.updated_at = datetime.now(timezone.utc)
+#             conv.message_count = (conv.message_count or 0) + 2
+#             if conv.title == "New Conversation":
+#                 conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+#                 print("CHANGED CONV TITLE")
+#             db.commit() 
+#             # Clear cache
+#             if conversation_manager.redis:
+#                 await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
+             
+#             yield json.dumps({"type": "done"}) + "\n"
+            
+#         except Exception as e:
+#             logger.error(f"Stream error: {e}", exc_info=True)
+#             yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+        
+#     return StreamingResponse(
+#         stream_response(newConversation, files),  # Pass files directly
+#         media_type="text/plain",
+#         headers={
+#             "Cache-Control": "no-cache",
+#             "X-Accel-Buffering": "no",
+#             "Connection": "keep-alive",
+#             "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "*"
+#         }
+#     ) 
+
 @app.post("/chat/send/stream") 
 async def send_chat_message_stream(
     content: str = Form(...),
@@ -1234,8 +1853,24 @@ async def send_chat_message_stream(
     files: List[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user)
-): 
- 
+):
+    """
+    Send message with streaming response
+    Routes to Celery for deep_search or lab_mode, otherwise direct LLM call
+    """
+    
+    # ===== DEBUG LOGGING =====
+    print("="*80)
+    print("🔥 ENDPOINT HIT: /chat/send/stream")
+    print(f"Content: {content[:50] if content else 'None'}...")
+    print(f"Conv ID: {conversation_id}")
+    print(f"Deep Search: {deep_search}")
+    print(f"Lab Mode: {lab_mode}")
+    print(f"Files: {len(files)}")
+    print(f"Current User: {current_user.get('user_id') if current_user else 'Anonymous'}")
+    print("="*80)
+    
+    # Create message object
     message = MessageSend(
         content=content,
         conversation_id=conversation_id,
@@ -1244,13 +1879,12 @@ async def send_chat_message_stream(
     )
     
     conversation_id = message.conversation_id
+    newConversation = False
     
     try:
-        
-        newConversation = False
-        # Auto-create conversation if needed
+        # ===== CREATE OR GET CONVERSATION =====
         if not conversation_id:
-            print("NO CONV FOUND")
+            print("NO CONV FOUND - Creating new conversation")
             conversation = Conversation(
                 user_id=uuid.UUID(current_user["user_id"]) if current_user else None,
                 title="New Conversation",
@@ -1262,20 +1896,27 @@ async def send_chat_message_stream(
             db.refresh(conversation)
             conversation_id = str(conversation.id)
             conv = conversation
-            print("CREATED A CONV")
+            print(f"✅ CREATED CONV: {conversation_id}")
         else:
-            print("CONV FOUND")
-            conv = db.query(Conversation).filter(Conversation.id == uuid.UUID(conversation_id)).first()
+            print(f"CONV FOUND: {conversation_id}")
+            # Use row-level lock for existing conversation
+            conv = db.query(Conversation).filter(
+                Conversation.id == uuid.UUID(conversation_id)
+            ).with_for_update().first()
             
             if not conv:
                 raise HTTPException(status_code=404, detail="Conversation not found")
         
     except Exception as e:
-        print("RAISED EXCEPTION WHEN CREATING A NEW CONV")
-        
-    # Check anonymous limit
+        print(f"❌ EXCEPTION WHEN CREATING/GETTING CONV: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    # ===== CHECK ANONYMOUS MESSAGE LIMIT =====
     if conv.is_anonymous and conv.message_count >= 1000:
-        # logger.info("Hit anonymous limit, returning limit message")
+        logger.info("Hit anonymous limit, returning limit message")
+        
         async def limit_response():
             yield json.dumps({
                 "type": "error",
@@ -1285,544 +1926,602 @@ async def send_chat_message_stream(
             yield json.dumps({"type": "done"}) + "\n"
         
         return StreamingResponse(
-          
             limit_response(),
             media_type="text/plain",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "*"}
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
         )
-     
     
-    async def stream_response(  newConversation, uploaded_files=None):
-              
-        
-        """
-        Complete streaming response function with:
-        - File upload support (PDF, CSV, Excel, TXT)
-        - Deep search with categorized sources
-        - Lab mode with asset extraction
-        - Normal search mode
-        """
+    # ===== ROUTE TO CELERY OR DIRECT =====
+    use_celery = message.deep_search or message.lab_mode
+    
+    print(f"IS LAB -> {message.lab_mode}")
+    print(f"IS DEEP SEARCH -> {message.deep_search}")
+    print(f"USE CELERY -> {use_celery}")
+    
+    if use_celery:
+        print("🚀 Routing to CELERY")
+        return StreamingResponse(
+            stream_response_celery(newConversation, message, conversation_id, conv, files, db),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+    else:
+        print("⚡ Routing to DIRECT")
+        return StreamingResponse(
+            stream_response_direct(newConversation, message, conversation_id, conv, files, db),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
 
-        from scraper_stable_optimized import search_with_web
-        finalSources = []
-        extracted_assets = []
-        file_contents = [] 
-        extracted_all_tables = []
-        search_content = ""
-        sources = None
-        charttables = None
-        alltables = None 
+
+async def stream_response_direct(
+    newConversation: bool,
+    message: MessageSend,
+    conversation_id: str,
+    conv: Conversation,
+    uploaded_files: List[UploadFile],
+    db: Session
+):
+    """
+    Direct LLM streaming for normal/simple searches
+    No Celery - immediate response with streaming
+    """
+    
+    finalSources = []
+    extracted_assets = []
+    file_contents = [] 
+    search_content = ""
+    full_response = ""
+    app = None
+    transformed_query = ""
+    
+ 
+    try:
+        is_lab_mode = message.lab_mode
+        is_deep_search = message.deep_search
         
-        try:
-            is_lab_mode = message.lab_mode
-            is_deep_search = message.deep_search
+        # ===== PROCESS UPLOADED FILES =====
+        if uploaded_files and len(uploaded_files) > 0:
+            logger.info(f"[FILES] Processing {len(uploaded_files)} uploaded files")
             
-            # === PROCESS UPLOADED FILES ===
-            if uploaded_files and len(uploaded_files) > 0:
-                # logger.info(f"[FILES] Processing {len(uploaded_files)} uploaded files")
-                
-                yield json.dumps({
-                    "type": "reasoning",
-                    "step": "File Processing",
-                    "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }) + "\n"
-                await asyncio.sleep(0.2)
-                
-                for idx, file in enumerate(uploaded_files, 1):
-                    try:
-                        # Read file content
-                        content_bytes = await file.read()
-                        file_size_kb = len(content_bytes) / 1024
+            yield json.dumps({
+                "type": "reasoning",
+                "step": "File Processing",
+                "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }) + "\n"
+            await asyncio.sleep(0.2)
+            
+            for idx, file in enumerate(uploaded_files, 1):
+                try:
+                    content_bytes = await file.read()
+                    file_size_kb = len(content_bytes) / 1024
+                    
+                    logger.info(f"[FILES] Processing file {idx}: {file.filename} ({file_size_kb:.1f} KB)")
+                    
+                    # Process based on file type
+                    if file.content_type == "application/pdf":
+                        import pdfplumber
+                        from io import BytesIO
                         
-                        # logger.info(f"[FILES] Processing file {idx}: {file.filename} ({file_size_kb:.1f} KB, type: {file.content_type})")
-                        
-                        # Process based on file type
-                        if file.content_type == "application/pdf":
-                            # Extract text from PDF
-                            import pdfplumber
-                            from io import BytesIO
+                        text_content = ""
+                        try:
+                            with pdfplumber.open(BytesIO(content_bytes)) as pdf:
+                                for page_num, page in enumerate(pdf.pages, 1):
+                                    page_text = page.extract_text()
+                                    if page_text:
+                                        text_content += f"\n--- Page {page_num} ---\n{page_text}\n"
                             
-                            text_content = ""
-                            try:
-                                with pdfplumber.open(BytesIO(content_bytes)) as pdf:
-                                    # logger.info(f"[FILES] PDF has {len(pdf.pages)} pages")
-                                    for page_num, page in enumerate(pdf.pages, 1):
-                                        page_text = page.extract_text()
-                                        if page_text:
-                                            text_content += f"\n--- Page {page_num} ---\n{page_text}\n"
-                                
-                                file_contents.append({
-                                    "filename": file.filename,
-                                    "type": "pdf",
-                                    "pages": len(pdf.pages),
-                                    "content": text_content[:10000]  # Limit to 10k chars
-                                })
-                                # logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from PDF")
-                                
-                            except Exception as e:
-                                logger.error(f"[FILES] PDF extraction error: {e}")
-                                file_contents.append({
-                                    "filename": file.filename,
-                                    "type": "pdf",
-                                    "content": f"Error extracting PDF: {str(e)}"
-                                })
-                            
-                        elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
-                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
-                            # Handle CSV/Excel
-                            import pandas as pd
-                            from io import BytesIO
-                            
-                            try:
-                                if file.content_type == "text/csv":
-                                    df = pd.read_csv(BytesIO(content_bytes))
-                                else:
-                                    df = pd.read_excel(BytesIO(content_bytes))
-                                
-                                # logger.info(f"[FILES] Loaded dataframe: {len(df)} rows, {len(df.columns)} columns")
-                                
-                                # Convert to text summary
-                                summary = f"File: {file.filename}\n"
-                                summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
-                                summary += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
-                                summary += f"First 10 rows:\n{df.head(10).to_string()}\n\n"
-                                
-                                if len(df) > 10:
-                                    summary += f"Summary Statistics:\n{df.describe().to_string()}"
-                                
-                                file_contents.append({
-                                    "filename": file.filename,
-                                    "type": "tabular",
-                                    "rows": len(df),
-                                    "columns": len(df.columns),
-                                    "content": summary[:10000]
-                                })
-                                
-                                # logger.info(f"[FILES] ✓ Processed tabular data")
-                                
-                                # Add to extracted_assets for lab mode
-                                # if is_lab_mode:
-                                #     extracted_assets.append({
-                                #         "type": "table",
-                                #         "filename": file.filename,
-                                #         "rows": len(df),
-                                #         "columns": df.columns.tolist(),
-                                #         "preview": df.head(50).to_dict()
-                                #     })
-                                    # logger.info(f"[LAB MODE] Added table to assets")
-                                    
-                            except Exception as e:
-                                logger.error(f"[FILES] Pandas error: {e}")
-                                try:
-                                    text = content_bytes.decode('utf-8', errors='ignore')
-                                    file_contents.append({
-                                        "filename": file.filename,
-                                        "type": "text",
-                                        "content": text[:10000]
-                                    })
-                                except:
-                                    file_contents.append({
-                                        "filename": file.filename,
-                                        "type": "unknown",
-                                        "content": f"Error processing file: {str(e)}"
-                                    })
-                            
-                        elif file.content_type == "text/plain":
-                            # Plain text file
-                            try:
-                                text_content = content_bytes.decode('utf-8', errors='ignore')
-                                file_contents.append({
-                                    "filename": file.filename,
-                                    "type": "text",
-                                    "content": text_content[:10000]
-                                })
-                                # logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from text file")
-                            except Exception as e:
-                                logger.error(f"[FILES] Text file error: {e}")
-                                file_contents.append({
-                                    "filename": file.filename,
-                                    "type": "text",
-                                    "content": f"Error reading text file: {str(e)}"
-                                })
-                        
-                        else:
-                            logger.warning(f"[FILES] Unsupported file type: {file.content_type}")
                             file_contents.append({
                                 "filename": file.filename,
-                                "type": "unsupported",
-                                "content": f"Unsupported file type: {file.content_type}"
+                                "type": "pdf",
+                                "pages": len(pdf.pages),
+                                "content": text_content[:10000]
                             })
-                            continue
-                        
-                        # Send success notification
-                        yield json.dumps({
-                            "type": "reasoning",
-                            "step": f"File {idx} Processed",
-                            "content": f"✓ Extracted content from {file.filename}",
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }) + "\n"
-                        await asyncio.sleep(0.1)
-                        
-                    except Exception as e:
-                        logger.error(f"[FILES] Error processing {file.filename}: {e}", exc_info=True)
-                        yield json.dumps({
-                            "type": "reasoning",
-                            "step": f"File {idx} Error",
-                            "content": f"Failed to process {file.filename}: {str(e)}",
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }) + "\n"
-                            
-            # Send metadata
-            metadata = json.dumps({
-                "type": "metadata",
-                "conversation_id": conversation_id,
-                "is_anonymous": conv.is_anonymous,
-                "deep_search": is_deep_search,
-                "lab_mode": is_lab_mode,
-                "files_processed": len(file_contents)
-            }) + "\n"
-            yield metadata
-            
-            # === GET CONVERSATION HISTORY ===
-            db_messages = db.query(Message).filter(
-                Message.conversation_id == uuid.UUID(conversation_id)
-            ).order_by(Message.created_at).all()
-            
-            messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
-            
-            # === TRACK SOURCES AND REASONING STEPS ===
-            collected_sources = []
-            reasoning_steps = []
-            collected_snippets = []
-            overview_content = []
-            overview_sources_map = {}  # NEW: Track sources per query
-            collected_sources = []
-            full_response = "APP"
-            finalSources = []
-            app = None
-            combined_overview = ""
-            final_prompt = ""
-            generateApp = True
-            transformed_query = ""
-            
-
-            conversation = None
-            # message.deep_search = False
-            # message.lab_mode = True
-             
-            print("IS LAB -> " + str(message.lab_mode))
-            print("IS DEEP SEARCH -> " + str(message.deep_search))
- 
-            if message.lab_mode:
-                from lab_claude_version_extenal import EnhancedHTMLAppGenerator
-                generator = EnhancedHTMLAppGenerator(verbose=False)
-                # app,messages_list = await generator.develop_app(
-                #     message.content,
-                #     conversation_history=messages_list                
-                # )
-                
-                async for result in generator.develop_app(message.content, messages_list):
-                    if result.get("type") == "sources":
-                        content = result.get("content")
-                        urls = content.get("urls")
-                        transformed_query = content.get("transformed_query")
-                        finalSources.append(urls)
-                            
-                        # transformed_query = text                   
-                        step = {
-                            "type": "reasoning",
-                            "step": "Sources Found",
-                            "content": transformed_query,
-                            "found_sources": len(urls),
-                            "sources": urls,
-                            "query": transformed_query,  # NEW
-                            "category": "Web Search",  # NEW
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }
-                        yield json.dumps(step) + "\n" 
-                        reasoning_steps.append(step) 
-                        # yield json.dumps(content) + "\n "
-                    if result.get("type") == "reasoning":
-                        step = {
-                            "type": "reasoning",
-                            "step": result.get("content"),
-                            "content": result.get("content"),
-                            "found_sources": 0,
-                            "sources": [],
-                            # "query": transformed_query,  # NEW
-                            # "category": "Web Search",  # NEW
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }
-                        yield json.dumps(step) + "\n" 
-                        reasoning_steps.append(step)
-                        # yield json.dumps(result) + "\n"
-                    if result.get("type") == "html":
-                        app = result.get("content")
-                    if result.get("type") == "analysis_summary":
-                        full_response = result.get("content")
-                        # yield {"type":"content", "content":analysis_summary}
-                    if result.get("type") == "done":
-                        yield json.dumps(result) + "\n "  
-                
-                print("Generated app -> " + str(len(app)))
-                # try:
-                #     print("Developing app")
-                #     md1, conversation = await gen.develop_report(
-                #     message.content,
-                #     conversation_history=messages_list,
-                #     use_multi_stage=True,
-                #     enable_scraping=True,
-                #     return_conversation=True 
-                # )
-                #     print("MD developed -> " + str(len(md1)))
-                #     app = await gen._generate_html(md1)         
-                #     print("APP Developed -> " + str(app))                      
-                # except Exception as e:
-                #     print("Exception when developing app -> " + str(e))
-            # elif message.deep_search:
-            #     from deep_search import deep_search_chat_agent
-            #     user_prompt =   message.content
-            #     async for results in deep_search_chat_agent(user_prompt,messages_list,newConversation):
+                            logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from PDF")
+                        except Exception as e:
+                            logger.error(f"[FILES] PDF extraction error: {e}")
+                            file_contents.append({
+                                "filename": file.filename,
+                                "type": "pdf",
+                                "content": f"Error extracting PDF: {str(e)}"
+                            })
                     
-            #         try:
-            #             if results.get("status") == "assets":
-            #                 charttables = results.get("content", [])
-            #                 extracted_assets.extend(charttables)
+                    elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
+                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
+                        import pandas as pd
+                        from io import BytesIO
+                        
+                        try:
+                            if file.content_type == "text/csv":
+                                df = pd.read_csv(BytesIO(content_bytes))
+                            else:
+                                df = pd.read_excel(BytesIO(content_bytes))
                             
-            #             if results.get("status") == "query_transformed":                         
+                            summary = f"File: {file.filename}\n"
+                            summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
+                            summary += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
+                            summary += f"First 10 rows:\n{df.head(10).to_string()}\n\n"
                             
-            #                 content = results.get("content", "")    
-            #                 transformed_query = content.get("search_query")
-            #                 urls = content.get("urls")
-            #                 finalSources.append(urls)
-                             
-            #                 # transformed_query = text                   
-            #                 step = {
-            #                     "type": "reasoning",
-            #                     "step": "Sources Found",
-            #                     "content": transformed_query,
-            #                     "found_sources": len(urls),
-            #                     "sources": urls,
-            #                     "query": transformed_query,  # NEW
-            #                     "category": "Web Search",  # NEW
-            #                     "timestamp": datetime.now(timezone.utc).isoformat()
-            #                 }
-            #                 yield json.dumps(step) + "\n" 
-            #                 reasoning_steps.append(step) 
+                            if len(df) > 10:
+                                summary += f"Summary Statistics:\n{df.describe().to_string()}"
                             
-            #             if results.get("status") == "single_prompt_result":
+                            file_contents.append({
+                                "filename": file.filename,
+                                "type": "tabular",
+                                "rows": len(df),
+                                "columns": len(df.columns),
+                                "content": summary[:10000]
+                            })
                             
-            #                 content = results.get("content")
-            #                 answer = content.get("answer") 
-                            
-            #                 yield json.dumps({"type": "content", "text": answer})  + "\n"
-            #                 full_response += answer
-                            
-            #         except Exception as e:
-            #             print("exception while yielding -> "+ str(e))
-            elif message.deep_search:
-                from deep_search_claude_version_yield_statements import EnhancedMarkdownReportGenerator
-                generator = EnhancedMarkdownReportGenerator()
-                async for result in generator.develop_report(message.content, messages_list):
-                    if result.get("type") == "sources":
-                        content = result.get("content")
-                        urls = content.get("urls")
-                        transformed_query = content.get("transformed_query")
-                        finalSources.append(urls)
-                            
-                        # transformed_query = text                   
-                        step = {
-                            "type": "reasoning",
-                            "step": "Sources Found",
-                            "content": transformed_query,
-                            "found_sources": len(urls),
-                            "sources": urls,
-                            "query": transformed_query,  # NEW
-                            "category": "Web Search",  # NEW
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }
-                        yield json.dumps(step) + "\n" 
-                        reasoning_steps.append(step) 
-                        # yield json.dumps(content) + "\n "
-                    if result.get("type") == "reasoning":
-                        step = {
-                            "type": "reasoning",
-                            "step": result.get("content"),
-                            "content": result.get("content"),
-                            "found_sources": 0,
-                            "sources": [],
-                            # "query": transformed_query,  # NEW
-                            # "category": "Web Search",  # NEW
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }
-                        yield json.dumps(step) + "\n" 
-                        reasoning_steps.append(step)
-                        # yield json.dumps(result) + "\n"
-                    if result.get("type") == "markdown":
-                        app = result.get("content")
-                    if result.get("type") == "analysis_summary":
-                        full_response = result.get("content")
-                        # yield {"type":"content", "content":analysis_summary}
-                    if result.get("type") == "done":
-                        yield json.dumps(content) + "\n "
-                     
-                # md = await generator.develop_report(message.content, messages_list)                                
-                # yield json.dumps({"type": "content", "text": md})  + "\n"
-            else: 
-                  
-                from simple_search import simple_search_chat_agent
-                user_prompt =   message.content
-                
-                async for results in simple_search_chat_agent(user_prompt,messages_list):
+                            logger.info(f"[FILES] ✓ Processed tabular data")
+                        except Exception as e:
+                            logger.error(f"[FILES] Pandas error: {e}")
+                            file_contents.append({
+                                "filename": file.filename,
+                                "type": "unknown",
+                                "content": f"Error processing file: {str(e)}"
+                            })
                     
-                    try:
-                        data = json.loads(results)
-                        
-                        if data.get("type") == "transformed_query":
-                            text = data.get("query", "")                             
-                            transformed_query = text
-                            
-                        if data.get("type") == "content":
-                            text = data.get("text", "")
-                            yield json.dumps({"type": "content", "text": text})  + "\n"
-                            full_response += text
-                            
-                        if data.get("type") == "sources":
-               
-                            urls = data.get("urls", "")
-                          
-                            step = {
-                                "type": "reasoning",
-                                "step": "Sources Found",
-                                "content": transformed_query,
-                                "found_sources": len(urls),
-                                "sources": urls,
-                                "query": transformed_query,  # NEW
-                                "category": "Web Search",  # NEW
-                                "timestamp": datetime.now(timezone.utc).isoformat()
-                            }
-                            yield json.dumps(step) + "\n" 
-                            reasoning_steps.append(step)
-                            finalSources.append(urls)
-                            
-                    except Exception as e:
-                        print("exception while yielding -> "+ str(e))
-                        
-                # === SIMPLE SEARCH MODE ===
-                # full_response = ""
-                # from scraper_stable_optimized import stream_with_web_results  
-                
-                # user_prompt = ""
-                # if file_contents:
-                #     user_prompt += "\n\n=== UPLOADED FILES ===\n"
-                #     for file_info in file_contents:
-                #         user_prompt += f"\n--- {file_info['filename']} ({file_info['type']}) ---\n"
-                #         user_prompt += file_info['content']
-                #         user_prompt += "\n" + "="*50 + "\n"
-                #     user_prompt += "\nPlease use the uploaded files content above in answering the prompt.\n\n"
-                
-                # user_prompt = ""    
-                # user_prompt +=   message.content
-                
-                # async for results in stream_with_web_results(user_prompt,messages_list):
+                    elif file.content_type == "text/plain":
+                        try:
+                            text_content = content_bytes.decode('utf-8', errors='ignore')
+                            file_contents.append({
+                                "filename": file.filename,
+                                "type": "text",
+                                "content": text_content[:10000]
+                            })
+                            logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from text file")
+                        except Exception as e:
+                            logger.error(f"[FILES] Text file error: {e}")
+                            file_contents.append({
+                                "filename": file.filename,
+                                "type": "text",
+                                "content": f"Error reading text file: {str(e)}"
+                            })
                     
-                #     # Process web search results
-                #     if not isinstance(results[0], Exception):
-                #         search_content, sources = results[0], results[1]
-                #         collected_sources = sources if sources else []
-                #         if sources:
-                #             finalSources.extend(sources)
-                #     else:
-                #         search_content = ""
-                #         collected_sources = []
-                
-                #     if collected_sources:
-                #         # step = {
-                #         #     "type": "reasoning",
-                #         #     "step": "Sources Found",
-                #         #     "content": f"Retrieved {len(collected_sources)} sources",
-                #         #     "sources": collected_sources,
-                #         #     "timestamp": datetime.now(timezone.utc).isoformat()
-                #         # }
-                        
-                #         step = {
-                #             "type": "reasoning",
-                #             "step": "Sources Found",
-                #             "content": message.content,
-                #             "found_sources": len(collected_sources),
-                #             "sources": collected_sources,
-                #             "query": message.content,  # NEW
-                #             "category": "Overview",  # NEW
-                #             "timestamp": datetime.now(timezone.utc).isoformat()
-                #         }
-                #         reasoning_steps.append(step)
-                #         yield json.dumps(step) + "\n"
-                #         await asyncio.sleep(0.2)
-                        
-                #     if search_content:
-                #         print("yielding-> " + search_content ) 
-                #         yield json.dumps({"type": "content", "text": search_content}) + "\n"
-                #         full_response += search_content
-
-            # === SAVE TO DATABASE ===
-            
-            # Save user message
-            user_msg = Message(
-                conversation_id=uuid.UUID(conversation_id),
-                role="user",
-                content=message.content,
-                sources=None,
-                reasoning_steps=None,
-                assets=None,
-                lab_mode=is_lab_mode,
-                has_file=len(file_contents) > 0,
-                file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
-            )
-            db.add(user_msg) 
-            print("SAVED USER MSG , CONV ID -> " + conversation_id) 
-            
-            assistant_msg = Message(
-                conversation_id=uuid.UUID(conversation_id),
-                role="assistant",
-                content=full_response,
-                sources=json.dumps(finalSources) if finalSources else None,
-                reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
-                assets=json.dumps(extracted_assets) if extracted_assets else None,
-                lab_mode=is_lab_mode,
-                app= app if app else None
-            )
-            db.add(assistant_msg)
-            
-            print("SAVED ASSISTANT MSG")
-            # Update conversation metadata
-            conv.updated_at = datetime.now(timezone.utc)
-            conv.message_count = (conv.message_count or 0) + 2
-            if conv.title == "New Conversation":
-                conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
-                print("CHANGED CONV TITLE")
-            db.commit() 
-            # Clear cache
-            if conversation_manager.redis:
-                await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
-             
-            yield json.dumps({"type": "done"}) + "\n"
-            
-        except Exception as e:
-            logger.error(f"Stream error: {e}", exc_info=True)
-            yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+                    else:
+                        logger.warning(f"[FILES] Unsupported file type: {file.content_type}")
+                        file_contents.append({
+                            "filename": file.filename,
+                            "type": "unsupported",
+                            "content": f"Unsupported file type: {file.content_type}"
+                        })
+                        continue
+                    
+                    # Send success notification
+                    yield json.dumps({
+                        "type": "reasoning",
+                        "step": f"File {idx} Processed",
+                        "content": f"✓ Extracted content from {file.filename}",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }) + "\n"
+                    await asyncio.sleep(0.1)
+                    
+                except Exception as e:
+                    logger.error(f"[FILES] Error processing {file.filename}: {e}", exc_info=True)
+                    yield json.dumps({
+                        "type": "reasoning",
+                        "step": f"File {idx} Error",
+                        "content": f"Failed to process {file.filename}: {str(e)}",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }) + "\n"
         
-    return StreamingResponse(
-        stream_response(newConversation, files),  # Pass files directly
-        media_type="text/plain",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-            "Connection": "keep-alive",
-            "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "*"
-        }
-    ) 
+        # ===== SEND METADATA =====
+        metadata = json.dumps({
+            "type": "metadata",
+            "conversation_id": conversation_id,
+            "is_anonymous": conv.is_anonymous,
+            "deep_search": is_deep_search,
+            "lab_mode": is_lab_mode,
+            "files_processed": len(file_contents)
+        }) + "\n"
+        yield metadata
+        
+        # ===== GET CONVERSATION HISTORY =====
+        db_messages = db.query(Message).filter(
+            Message.conversation_id == uuid.UUID(conversation_id)
+        ).order_by(Message.created_at).all()
+        
+        messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
+        
+        # Track reasoning steps
+        reasoning_steps = []
+        
+        # ===== NORMAL SEARCH MODE (Direct LLM) =====
+        from simple_search import simple_search_chat_agent
+        user_prompt = message.content
+        
+        # Add file contents to prompt if present
+        if file_contents:
+            user_prompt += "\n\n=== UPLOADED FILES ===\n"
+            for file_info in file_contents:
+                user_prompt += f"\n--- {file_info['filename']} ({file_info['type']}) ---\n"
+                user_prompt += file_info['content']
+                user_prompt += "\n" + "="*50 + "\n"
+            user_prompt += "\nPlease use the uploaded files content above in answering the prompt.\n\n"
+        
+        async for results in simple_search_chat_agent(user_prompt, messages_list):
+            try:
+                data = json.loads(results)
+                
+                # Handle transformed query
+                if data.get("type") == "transformed_query":
+                    text = data.get("query", "")                             
+                    transformed_query = text
+                
+                # Handle content streaming
+                if data.get("type") == "content":
+                    text = data.get("text", "")
+                    yield json.dumps({"type": "content", "text": text}) + "\n"
+                    full_response += text
+                
+                # Handle sources
+                if data.get("type") == "sources":
+                    urls = data.get("urls", [])
+                    
+                    step = {
+                        "type": "reasoning",
+                        "step": "Sources Found",
+                        "content": transformed_query,
+                        "found_sources": len(urls),
+                        "sources": urls,
+                        "query": transformed_query,
+                        "category": "Web Search",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    yield json.dumps(step) + "\n" 
+                    reasoning_steps.append(step)
+                    finalSources.append(urls)
+                    
+            except Exception as e:
+                print(f"Exception while yielding -> {e}")
+        
+        # ===== SAVE TO DATABASE =====
+        
+        # Save user message
+        user_msg = Message(
+            conversation_id=uuid.UUID(conversation_id),
+            role="user",
+            content=message.content,
+            sources=None,
+            reasoning_steps=None,
+            assets=None,
+            lab_mode=is_lab_mode,
+            has_file=len(file_contents) > 0,
+            file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
+        )
+        db.add(user_msg) 
+        print(f"SAVED USER MSG, CONV ID -> {conversation_id}") 
+        
+        # Save assistant message
+        assistant_msg = Message(
+            conversation_id=uuid.UUID(conversation_id),
+            role="assistant",
+            content=full_response,
+            sources=json.dumps(finalSources) if finalSources else None,
+            reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
+            assets=json.dumps(extracted_assets) if extracted_assets else None,
+            lab_mode=is_lab_mode,
+            app=app if app else None,
+            celery_task_id=None  # ✅ NULL for direct responses
+        )
+        db.add(assistant_msg)
+        
+        print("SAVED ASSISTANT MSG")
+        
+        # Update conversation metadata
+        conv.updated_at = datetime.now(timezone.utc)
+        conv.message_count = (conv.message_count or 0) + 2
+        if conv.title == "New Conversation":
+            conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+            print("CHANGED CONV TITLE")
+        
+        db.commit() 
+        
+        # Clear cache
+        if conversation_manager.redis:
+            await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
+        
+        # Send done signal
+        yield json.dumps({"type": "done"}) + "\n"
+        
+    except Exception as e:
+        logger.error(f"Stream error: {e}", exc_info=True)
+        yield json.dumps({
+            "type": "error",
+            "message": "An error occurred while processing your request"
+        }) + "\n"
+        yield json.dumps({"type": "done"}) + "\n"
 
+async def process_uploaded_files(uploaded_files: List[UploadFile]) -> list:
+    """
+    Extract text content from uploaded files
+    Returns list of dicts with filename, type, content
+    """
+    file_contents = []
+    
+    for file in uploaded_files:
+        content_bytes = await file.read()
+        
+        if file.content_type == "application/pdf":
+            import pdfplumber
+            from io import BytesIO
+            
+            text_content = ""
+            with pdfplumber.open(BytesIO(content_bytes)) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text_content += page_text + "\n"
+            
+            file_contents.append({
+                "filename": file.filename,
+                "type": "pdf",
+                "content": text_content[:10000]
+            })
+        
+        elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
+                                   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
+            import pandas as pd
+            from io import BytesIO
+            
+            if file.content_type == "text/csv":
+                df = pd.read_csv(BytesIO(content_bytes))
+            else:
+                df = pd.read_excel(BytesIO(content_bytes))
+            
+            summary = f"File: {file.filename}\n"
+            summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
+            summary += f"Data:\n{df.head(10).to_string()}"
+            
+            file_contents.append({
+                "filename": file.filename,
+                "type": "tabular",
+                "content": summary[:10000]
+            })
+        
+        elif file.content_type == "text/plain":
+            text_content = content_bytes.decode('utf-8', errors='ignore')
+            file_contents.append({
+                "filename": file.filename,
+                "type": "text",
+                "content": text_content[:10000]
+            })
+    
+    return file_contents
+
+# ============================================================================
+# CELERY STREAMING FUNCTION (NEW)
+# ============================================================================
+
+async def stream_response_celery(
+    newConversation: bool,
+    message: MessageSend,
+    conversation_id: str,
+    conv: Conversation,
+    uploaded_files: List[UploadFile],
+    db: Session
+):
+    """
+    Stream response from Celery worker via Redis pub/sub
+    Only yields reasoning steps - final result saved to DB
+    """
+    
+    try:
+        # Process uploaded files
+        file_contents = []
+        if uploaded_files and len(uploaded_files) > 0:
+            yield json.dumps({
+                "type": "reasoning",
+                "step": "File Processing",
+                "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }) + "\n"
+            
+            # Use your existing file processing code
+            file_contents = await process_uploaded_files(uploaded_files)
+        
+        # Send metadata
+        yield json.dumps({
+            "type": "metadata",
+            "conversation_id": conversation_id,
+            "is_anonymous": conv.is_anonymous,
+            "deep_search": message.deep_search,
+            "lab_mode": message.lab_mode,
+            "files_processed": len(file_contents)
+        }) + "\n"
+        
+        # Save user message
+        user_msg = Message(
+            conversation_id=uuid.UUID(conversation_id),
+            role="user",
+            content=message.content,
+            has_file=len(file_contents) > 0,
+            file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
+        )
+        db.add(user_msg)
+        db.commit()
+        
+        # Generate job ID and dispatch Celery task
+        job_id = str(uuid.uuid4())
+        
+        # Get conversation history
+        db_messages = db.query(Message).filter(
+            Message.conversation_id == uuid.UUID(conversation_id)
+        ).order_by(Message.created_at).all()
+        messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
+        
+        # Dispatch task
+        from tasks import deep_search_task
+        task = deep_search_task.apply_async(
+            args=[
+                job_id,
+                conversation_id,
+                message.content,
+                messages_list,
+                file_contents,
+                message.lab_mode
+            ],
+            task_id=f"search-{job_id}",
+            queue='llm_worker_queue' 
+        )
+        
+        print(f"🚀 Dispatched Celery task: {task.id} for job: {job_id}")
+        
+        # Subscribe to Redis and poll for updates
+        from redis_client import get_pubsub
+        pubsub = get_pubsub()
+        channel = f"job:{job_id}"
+        pubsub.subscribe(channel)
+        
+        print(f"🎧 Subscribed to Redis channel: {channel}")
+        
+        # Poll with timeout
+        timeout_seconds = 30 * 60  # 30 minutes
+        start_time = time.time()
+        final_result = None
+        
+        while True:
+            # Check timeout
+            if time.time() - start_time > timeout_seconds:
+                print(f"⏰ Timeout exceeded for job {job_id}")
+                
+                # Revoke Celery task
+                from celery_app import celery_app
+                celery_app.control.revoke(task.id, terminate=True)
+                
+                # Save error message
+                error_msg = Message(
+                    conversation_id=uuid.UUID(conversation_id),
+                    role="assistant",
+                    content="We're sorry, but your request took too long to process. Please try again with a simpler query.",
+                    celery_task_id=task.id
+                )
+                db.add(error_msg)
+                
+                # Update conversation
+                conv.updated_at = datetime.now(timezone.utc)
+                conv.message_count = (conv.message_count or 0) + 2
+                if conv.title == "New Conversation":
+                    conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+                db.commit()
+                
+                # Yield error
+                yield json.dumps({
+                    "type": "error",
+                    "message": "Request timeout - please try again"
+                }) + "\n"
+                
+                yield json.dumps({"type": "done"}) + "\n"
+                break
+            
+            # Get message from Redis
+            msg = pubsub.get_message(ignore_subscribe_messages=True)
+            
+            if msg and msg["type"] == "message":
+                data_str = msg["data"]
+                data = json.loads(data_str)
+                
+                msg_type = data.get("type")
+                
+                if msg_type == "reasoning":
+                    # Yield reasoning to client (streaming)
+                    yield data_str + "\n"
+                
+                elif msg_type == "complete":
+                    # Don't yield - save to DB instead
+                    final_result = data
+                    print(f"✅ Received complete result from worker")
+                    
+                    # Save assistant message
+                    assistant_msg = Message(
+                        conversation_id=uuid.UUID(conversation_id),
+                        role="assistant",
+                        content=final_result.get("content", ""),
+                        sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
+                        reasoning_steps=json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None,
+                        assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
+                        app=final_result.get("app"),
+                        lab_mode=final_result.get("lab_mode", False),
+                        celery_task_id=task.id
+                    )
+                    db.add(assistant_msg)
+                    
+                    # Update conversation
+                    conv.updated_at = datetime.now(timezone.utc)
+                    conv.message_count = (conv.message_count or 0) + 2
+                    if conv.title == "New Conversation":
+                        conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+                    
+                    db.commit()
+                    
+                    # Clear cache
+                    if conversation_manager.redis:
+                        await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
+                    
+                    # Yield done signal
+                    yield json.dumps({"type": "done"}) + "\n"
+                    break
+                
+                elif msg_type == "error":
+                    # Save error message
+                    error_msg = Message(
+                        conversation_id=uuid.UUID(conversation_id),
+                        role="assistant",
+                        content=data.get("message", "An error occurred"),
+                        celery_task_id=task.id
+                    )
+                    db.add(error_msg)
+                    
+                    # Update conversation
+                    conv.updated_at = datetime.now(timezone.utc)
+                    conv.message_count = (conv.message_count or 0) + 2
+                    if conv.title == "New Conversation":
+                        conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+                    
+                    db.commit()
+                    
+                    # Yield error
+                    yield data_str + "\n"
+                    yield json.dumps({"type": "done"}) + "\n"
+                    break
+            
+            # Small delay to prevent CPU spinning
+            await asyncio.sleep(0.01)
+        
+        # Cleanup
+        pubsub.unsubscribe(channel)
+        pubsub.close()
+        
+    except Exception as e:
+        logger.error(f"Celery stream error: {e}", exc_info=True)
+        yield json.dumps({
+            "type": "error",
+            "message": "An unexpected error occurred"
+        }) + "\n"
+        yield json.dumps({"type": "done"}) + "\n"
+        
 @app.options("/auth/register")
 async def register_options(request: Request):
     origin = request.headers.get("origin", "*")
@@ -3527,4 +4226,4 @@ async def verify_magic_link(
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
 import uvicorn
-uvicorn.run(app, host="0.0.0.0", port=8082, log_level="info")
+uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
