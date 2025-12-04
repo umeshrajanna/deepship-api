@@ -903,7 +903,21 @@ class Conversation(Base):
     message_count = Column(Integer, default=0)
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
     user = relationship("User", back_populates="conversations")
-
+class ReasoningStep(Base):
+    __tablename__ = "reasoning_steps"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    message_id = Column(String, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
+    step_number = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    query = Column(Text, nullable=True)
+    category = Column(String, nullable=True)
+    sources = Column(Text, nullable=True)  # JSON string
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship back to Message
+    message = relationship("Message", back_populates="reasoning_steps_rel")
+    
 class Message(Base):
     __tablename__ = "messages"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -922,6 +936,13 @@ class Message(Base):
     lab_mode = Column(Boolean, default=False)  # ADD THIS LINE
     app = Column(Text, nullable=True)
     celery_task_id = Column(String, nullable=True, index=True)
+    status = Column(String, default="complete")
+    reasoning_steps_rel = relationship(
+        "ReasoningStep", 
+        back_populates="message", 
+        cascade="all, delete-orphan",
+        order_by="ReasoningStep.step_number"
+    )
     
 class Reaction(Base):
     __tablename__ = "reactions"
@@ -1120,25 +1141,7 @@ class ConversationManager:
 
         
 conversation_manager = ConversationManager()
-
-# Lifespan
-
-# # FastAPI app
-# app = FastAPI(title="Enhanced Chat System", lifespan=lifespan)
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=[
-#         "http://localhost:8084",
-#         "http://localhost:8082",
-#         "https://noirai-production.up.railway.app",
-#     ],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"], 
-# )
-
-# Database dependency
+ 
 def get_db():
     db = SessionLocal()
     try:
@@ -1178,6 +1181,43 @@ def get_current_user(authorization: str = Header(None)) -> Optional[dict]:
     except:
         return None
 
+def get_current_user_optional(authorization: str = Header(None)) -> Optional[dict]:
+    """
+    Optional authentication - returns user if token is valid, None if not provided
+    Used for endpoints that work for both authenticated and anonymous users
+    """
+    if not authorization:
+        return None
+    
+    try:
+        # Extract token from "Bearer <token>" format
+        if authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+        else:
+            token = authorization
+        
+        # Decode JWT token using your existing settings
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        username = payload.get("username")
+        
+        if not user_id:
+            return None
+        
+        return {
+            "user_id": user_id,
+            "username": username,
+            "email": payload.get("email")
+        }
+    except jwt.ExpiredSignatureError:
+        # Token expired - return None (allow anonymous access)
+        return None
+    except jwt.JWTError:
+        # Invalid token - return None (allow anonymous access)
+        return None
+    except Exception as e:
+        print(f"Auth error: {e}")
+        return None
 # ===================================================
 # SIMPLIFIED ENDPOINTS - Auto-create conversation on first message
 # ============================================================================
@@ -1246,604 +1286,6 @@ async def chat_stream_options(request: Request):
         }
     )
  
-# @app.post("/chat/send/stream") 
-# async def send_chat_message_stream(
-#     content: str = Form(...),
-#     conversation_id: Optional[str] = Form(None),
-#     deep_search: Optional[bool] = Form(False),
-#     lab_mode: Optional[bool] = Form(False),
-#     files: List[UploadFile] = File(default=[]),
-#     db: Session = Depends(get_db),
-#     current_user: Optional[dict] = Depends(get_current_user)
-# ): 
- 
-#     message = MessageSend(
-#         content=content,
-#         conversation_id=conversation_id,
-#         deep_search=deep_search,
-#         lab_mode=lab_mode
-#     )
-    
-#     conversation_id = message.conversation_id
-    
-#     try:
-        
-#         newConversation = False
-#         # Auto-create conversation if needed
-#         if not conversation_id:
-#             print("NO CONV FOUND")
-#             conversation = Conversation(
-#                 user_id=uuid.UUID(current_user["user_id"]) if current_user else None,
-#                 title="New Conversation",
-#                 is_anonymous=current_user is None
-#             )
-#             newConversation = True
-#             db.add(conversation)
-#             db.commit()
-#             db.refresh(conversation)
-#             conversation_id = str(conversation.id)
-#             conv = conversation
-#             print("CREATED A CONV")
-#         else:
-#             print("CONV FOUND")
-#             conv = db.query(Conversation).filter(Conversation.id == uuid.UUID(conversation_id)).first()
-            
-#             if not conv:
-#                 raise HTTPException(status_code=404, detail="Conversation not found")
-        
-#     except Exception as e:
-#         print("RAISED EXCEPTION WHEN CREATING A NEW CONV")
-        
-#     # Check anonymous limit
-#     if conv.is_anonymous and conv.message_count >= 1000:
-#         # logger.info("Hit anonymous limit, returning limit message")
-#         async def limit_response():
-#             yield json.dumps({
-#                 "type": "error",
-#                 "message": "Message limit reached",
-#                 "limit_reached": True
-#             }) + "\n"
-#             yield json.dumps({"type": "done"}) + "\n"
-        
-#         return StreamingResponse(
-          
-#             limit_response(),
-#             media_type="text/plain",
-#             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "*"}
-#         )
-     
-    
-#     async def stream_response(  newConversation, uploaded_files=None):
-              
-        
-#         """
-#         Complete streaming response function with:
-#         - File upload support (PDF, CSV, Excel, TXT)
-#         - Deep search with categorized sources
-#         - Lab mode with asset extraction
-#         - Normal search mode
-#         """
-
-#         from scraper_stable_optimized import search_with_web
-#         finalSources = []
-#         extracted_assets = []
-#         file_contents = [] 
-#         extracted_all_tables = []
-#         search_content = ""
-#         sources = None
-#         charttables = None
-#         alltables = None 
-        
-#         try:
-#             is_lab_mode = message.lab_mode
-#             is_deep_search = message.deep_search
-            
-#             # === PROCESS UPLOADED FILES ===
-#             if uploaded_files and len(uploaded_files) > 0:
-#                 # logger.info(f"[FILES] Processing {len(uploaded_files)} uploaded files")
-                
-#                 yield json.dumps({
-#                     "type": "reasoning",
-#                     "step": "File Processing",
-#                     "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
-#                     "timestamp": datetime.now(timezone.utc).isoformat()
-#                 }) + "\n"
-#                 await asyncio.sleep(0.2)
-                
-#                 for idx, file in enumerate(uploaded_files, 1):
-#                     try:
-#                         # Read file content
-#                         content_bytes = await file.read()
-#                         file_size_kb = len(content_bytes) / 1024
-                        
-#                         # logger.info(f"[FILES] Processing file {idx}: {file.filename} ({file_size_kb:.1f} KB, type: {file.content_type})")
-                        
-#                         # Process based on file type
-#                         if file.content_type == "application/pdf":
-#                             # Extract text from PDF
-#                             import pdfplumber
-#                             from io import BytesIO
-                            
-#                             text_content = ""
-#                             try:
-#                                 with pdfplumber.open(BytesIO(content_bytes)) as pdf:
-#                                     # logger.info(f"[FILES] PDF has {len(pdf.pages)} pages")
-#                                     for page_num, page in enumerate(pdf.pages, 1):
-#                                         page_text = page.extract_text()
-#                                         if page_text:
-#                                             text_content += f"\n--- Page {page_num} ---\n{page_text}\n"
-                                
-#                                 file_contents.append({
-#                                     "filename": file.filename,
-#                                     "type": "pdf",
-#                                     "pages": len(pdf.pages),
-#                                     "content": text_content[:10000]  # Limit to 10k chars
-#                                 })
-#                                 # logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from PDF")
-                                
-#                             except Exception as e:
-#                                 logger.error(f"[FILES] PDF extraction error: {e}")
-#                                 file_contents.append({
-#                                     "filename": file.filename,
-#                                     "type": "pdf",
-#                                     "content": f"Error extracting PDF: {str(e)}"
-#                                 })
-                            
-#                         elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
-#                                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
-#                             # Handle CSV/Excel
-#                             import pandas as pd
-#                             from io import BytesIO
-                            
-#                             try:
-#                                 if file.content_type == "text/csv":
-#                                     df = pd.read_csv(BytesIO(content_bytes))
-#                                 else:
-#                                     df = pd.read_excel(BytesIO(content_bytes))
-                                
-#                                 # logger.info(f"[FILES] Loaded dataframe: {len(df)} rows, {len(df.columns)} columns")
-                                
-#                                 # Convert to text summary
-#                                 summary = f"File: {file.filename}\n"
-#                                 summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
-#                                 summary += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
-#                                 summary += f"First 10 rows:\n{df.head(10).to_string()}\n\n"
-                                
-#                                 if len(df) > 10:
-#                                     summary += f"Summary Statistics:\n{df.describe().to_string()}"
-                                
-#                                 file_contents.append({
-#                                     "filename": file.filename,
-#                                     "type": "tabular",
-#                                     "rows": len(df),
-#                                     "columns": len(df.columns),
-#                                     "content": summary[:10000]
-#                                 })
-                                
-#                                 # logger.info(f"[FILES] ✓ Processed tabular data")
-                                
-#                                 # Add to extracted_assets for lab mode
-#                                 # if is_lab_mode:
-#                                 #     extracted_assets.append({
-#                                 #         "type": "table",
-#                                 #         "filename": file.filename,
-#                                 #         "rows": len(df),
-#                                 #         "columns": df.columns.tolist(),
-#                                 #         "preview": df.head(50).to_dict()
-#                                 #     })
-#                                     # logger.info(f"[LAB MODE] Added table to assets")
-                                    
-#                             except Exception as e:
-#                                 logger.error(f"[FILES] Pandas error: {e}")
-#                                 try:
-#                                     text = content_bytes.decode('utf-8', errors='ignore')
-#                                     file_contents.append({
-#                                         "filename": file.filename,
-#                                         "type": "text",
-#                                         "content": text[:10000]
-#                                     })
-#                                 except:
-#                                     file_contents.append({
-#                                         "filename": file.filename,
-#                                         "type": "unknown",
-#                                         "content": f"Error processing file: {str(e)}"
-#                                     })
-                            
-#                         elif file.content_type == "text/plain":
-#                             # Plain text file
-#                             try:
-#                                 text_content = content_bytes.decode('utf-8', errors='ignore')
-#                                 file_contents.append({
-#                                     "filename": file.filename,
-#                                     "type": "text",
-#                                     "content": text_content[:10000]
-#                                 })
-#                                 # logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from text file")
-#                             except Exception as e:
-#                                 logger.error(f"[FILES] Text file error: {e}")
-#                                 file_contents.append({
-#                                     "filename": file.filename,
-#                                     "type": "text",
-#                                     "content": f"Error reading text file: {str(e)}"
-#                                 })
-                        
-#                         else:
-#                             logger.warning(f"[FILES] Unsupported file type: {file.content_type}")
-#                             file_contents.append({
-#                                 "filename": file.filename,
-#                                 "type": "unsupported",
-#                                 "content": f"Unsupported file type: {file.content_type}"
-#                             })
-#                             continue
-                        
-#                         # Send success notification
-#                         yield json.dumps({
-#                             "type": "reasoning",
-#                             "step": f"File {idx} Processed",
-#                             "content": f"✓ Extracted content from {file.filename}",
-#                             "timestamp": datetime.now(timezone.utc).isoformat()
-#                         }) + "\n"
-#                         await asyncio.sleep(0.1)
-                        
-#                     except Exception as e:
-#                         logger.error(f"[FILES] Error processing {file.filename}: {e}", exc_info=True)
-#                         yield json.dumps({
-#                             "type": "reasoning",
-#                             "step": f"File {idx} Error",
-#                             "content": f"Failed to process {file.filename}: {str(e)}",
-#                             "timestamp": datetime.now(timezone.utc).isoformat()
-#                         }) + "\n"
-                            
-#             # Send metadata
-#             metadata = json.dumps({
-#                 "type": "metadata",
-#                 "conversation_id": conversation_id,
-#                 "is_anonymous": conv.is_anonymous,
-#                 "deep_search": is_deep_search,
-#                 "lab_mode": is_lab_mode,
-#                 "files_processed": len(file_contents)
-#             }) + "\n"
-#             yield metadata
-            
-#             # === GET CONVERSATION HISTORY ===
-#             db_messages = db.query(Message).filter(
-#                 Message.conversation_id == uuid.UUID(conversation_id)
-#             ).order_by(Message.created_at).all()
-            
-#             messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
-            
-#             # === TRACK SOURCES AND REASONING STEPS ===
-#             collected_sources = []
-#             reasoning_steps = []
-#             collected_snippets = []
-#             overview_content = []
-#             overview_sources_map = {}  # NEW: Track sources per query
-#             collected_sources = []
-#             full_response = "APP"
-#             finalSources = []
-#             app = None
-#             combined_overview = ""
-#             final_prompt = ""
-#             generateApp = True
-#             transformed_query = ""
-            
-
-#             conversation = None
-#             # message.deep_search = False
-#             # message.lab_mode = True
-             
-#             print("IS LAB -> " + str(message.lab_mode))
-#             print("IS DEEP SEARCH -> " + str(message.deep_search))
- 
-#             if message.lab_mode:
-#                 from lab_claude_version_extenal import EnhancedHTMLAppGenerator
-#                 generator = EnhancedHTMLAppGenerator(verbose=False)
-#                 # app,messages_list = await generator.develop_app(
-#                 #     message.content,
-#                 #     conversation_history=messages_list                
-#                 # )
-                
-#                 async for result in generator.develop_app(message.content, messages_list):
-#                     if result.get("type") == "sources":
-#                         content = result.get("content")
-#                         urls = content.get("urls")
-#                         transformed_query = content.get("transformed_query")
-#                         finalSources.append(urls)
-                            
-#                         # transformed_query = text                   
-#                         step = {
-#                             "type": "reasoning",
-#                             "step": "Sources Found",
-#                             "content": transformed_query,
-#                             "found_sources": len(urls),
-#                             "sources": urls,
-#                             "query": transformed_query,  # NEW
-#                             "category": "Web Search",  # NEW
-#                             "timestamp": datetime.now(timezone.utc).isoformat()
-#                         }
-#                         yield json.dumps(step) + "\n" 
-#                         reasoning_steps.append(step) 
-#                         # yield json.dumps(content) + "\n "
-#                     if result.get("type") == "reasoning":
-#                         step = {
-#                             "type": "reasoning",
-#                             "step": result.get("content"),
-#                             "content": result.get("content"),
-#                             "found_sources": 0,
-#                             "sources": [],
-#                             # "query": transformed_query,  # NEW
-#                             # "category": "Web Search",  # NEW
-#                             "timestamp": datetime.now(timezone.utc).isoformat()
-#                         }
-#                         yield json.dumps(step) + "\n" 
-#                         reasoning_steps.append(step)
-#                         # yield json.dumps(result) + "\n"
-#                     if result.get("type") == "html":
-#                         app = result.get("content")
-#                     if result.get("type") == "analysis_summary":
-#                         full_response = result.get("content")
-#                         # yield {"type":"content", "content":analysis_summary}
-#                     if result.get("type") == "done":
-#                         yield json.dumps(result) + "\n "  
-                
-#                 print("Generated app -> " + str(len(app)))
-#                 # try:
-#                 #     print("Developing app")
-#                 #     md1, conversation = await gen.develop_report(
-#                 #     message.content,
-#                 #     conversation_history=messages_list,
-#                 #     use_multi_stage=True,
-#                 #     enable_scraping=True,
-#                 #     return_conversation=True 
-#                 # )
-#                 #     print("MD developed -> " + str(len(md1)))
-#                 #     app = await gen._generate_html(md1)         
-#                 #     print("APP Developed -> " + str(app))                      
-#                 # except Exception as e:
-#                 #     print("Exception when developing app -> " + str(e))
-#             # elif message.deep_search:
-#             #     from deep_search import deep_search_chat_agent
-#             #     user_prompt =   message.content
-#             #     async for results in deep_search_chat_agent(user_prompt,messages_list,newConversation):
-                    
-#             #         try:
-#             #             if results.get("status") == "assets":
-#             #                 charttables = results.get("content", [])
-#             #                 extracted_assets.extend(charttables)
-                            
-#             #             if results.get("status") == "query_transformed":                         
-                            
-#             #                 content = results.get("content", "")    
-#             #                 transformed_query = content.get("search_query")
-#             #                 urls = content.get("urls")
-#             #                 finalSources.append(urls)
-                             
-#             #                 # transformed_query = text                   
-#             #                 step = {
-#             #                     "type": "reasoning",
-#             #                     "step": "Sources Found",
-#             #                     "content": transformed_query,
-#             #                     "found_sources": len(urls),
-#             #                     "sources": urls,
-#             #                     "query": transformed_query,  # NEW
-#             #                     "category": "Web Search",  # NEW
-#             #                     "timestamp": datetime.now(timezone.utc).isoformat()
-#             #                 }
-#             #                 yield json.dumps(step) + "\n" 
-#             #                 reasoning_steps.append(step) 
-                            
-#             #             if results.get("status") == "single_prompt_result":
-                            
-#             #                 content = results.get("content")
-#             #                 answer = content.get("answer") 
-                            
-#             #                 yield json.dumps({"type": "content", "text": answer})  + "\n"
-#             #                 full_response += answer
-                            
-#             #         except Exception as e:
-#             #             print("exception while yielding -> "+ str(e))
-#             elif message.deep_search:
-#                 from deep_search_claude_version_yield_statements import EnhancedMarkdownReportGenerator
-#                 generator = EnhancedMarkdownReportGenerator()
-#                 async for result in generator.develop_report(message.content, messages_list):
-#                     if result.get("type") == "sources":
-#                         content = result.get("content")
-#                         urls = content.get("urls")
-#                         transformed_query = content.get("transformed_query")
-#                         finalSources.append(urls)
-                            
-#                         # transformed_query = text                   
-#                         step = {
-#                             "type": "reasoning",
-#                             "step": "Sources Found",
-#                             "content": transformed_query,
-#                             "found_sources": len(urls),
-#                             "sources": urls,
-#                             "query": transformed_query,  # NEW
-#                             "category": "Web Search",  # NEW
-#                             "timestamp": datetime.now(timezone.utc).isoformat()
-#                         }
-#                         yield json.dumps(step) + "\n" 
-#                         reasoning_steps.append(step) 
-#                         # yield json.dumps(content) + "\n "
-#                     if result.get("type") == "reasoning":
-#                         step = {
-#                             "type": "reasoning",
-#                             "step": result.get("content"),
-#                             "content": result.get("content"),
-#                             "found_sources": 0,
-#                             "sources": [],
-#                             # "query": transformed_query,  # NEW
-#                             # "category": "Web Search",  # NEW
-#                             "timestamp": datetime.now(timezone.utc).isoformat()
-#                         }
-#                         yield json.dumps(step) + "\n" 
-#                         reasoning_steps.append(step)
-#                         # yield json.dumps(result) + "\n"
-#                     if result.get("type") == "markdown":
-#                         app = result.get("content")
-#                     if result.get("type") == "analysis_summary":
-#                         full_response = result.get("content")
-#                         # yield {"type":"content", "content":analysis_summary}
-#                     if result.get("type") == "done":
-#                         yield json.dumps(content) + "\n "
-                     
-#                 # md = await generator.develop_report(message.content, messages_list)                                
-#                 # yield json.dumps({"type": "content", "text": md})  + "\n"
-#             else: 
-                  
-#                 from simple_search import simple_search_chat_agent
-#                 user_prompt =   message.content
-                
-#                 async for results in simple_search_chat_agent(user_prompt,messages_list):
-                    
-#                     try:
-#                         data = json.loads(results)
-                        
-#                         if data.get("type") == "transformed_query":
-#                             text = data.get("query", "")                             
-#                             transformed_query = text
-                            
-#                         if data.get("type") == "content":
-#                             text = data.get("text", "")
-#                             yield json.dumps({"type": "content", "text": text})  + "\n"
-#                             full_response += text
-                            
-#                         if data.get("type") == "sources":
-               
-#                             urls = data.get("urls", "")
-                          
-#                             step = {
-#                                 "type": "reasoning",
-#                                 "step": "Sources Found",
-#                                 "content": transformed_query,
-#                                 "found_sources": len(urls),
-#                                 "sources": urls,
-#                                 "query": transformed_query,  # NEW
-#                                 "category": "Web Search",  # NEW
-#                                 "timestamp": datetime.now(timezone.utc).isoformat()
-#                             }
-#                             yield json.dumps(step) + "\n" 
-#                             reasoning_steps.append(step)
-#                             finalSources.append(urls)
-                            
-#                     except Exception as e:
-#                         print("exception while yielding -> "+ str(e))
-                        
-#                 # === SIMPLE SEARCH MODE ===
-#                 # full_response = ""
-#                 # from scraper_stable_optimized import stream_with_web_results  
-                
-#                 # user_prompt = ""
-#                 # if file_contents:
-#                 #     user_prompt += "\n\n=== UPLOADED FILES ===\n"
-#                 #     for file_info in file_contents:
-#                 #         user_prompt += f"\n--- {file_info['filename']} ({file_info['type']}) ---\n"
-#                 #         user_prompt += file_info['content']
-#                 #         user_prompt += "\n" + "="*50 + "\n"
-#                 #     user_prompt += "\nPlease use the uploaded files content above in answering the prompt.\n\n"
-                
-#                 # user_prompt = ""    
-#                 # user_prompt +=   message.content
-                
-#                 # async for results in stream_with_web_results(user_prompt,messages_list):
-                    
-#                 #     # Process web search results
-#                 #     if not isinstance(results[0], Exception):
-#                 #         search_content, sources = results[0], results[1]
-#                 #         collected_sources = sources if sources else []
-#                 #         if sources:
-#                 #             finalSources.extend(sources)
-#                 #     else:
-#                 #         search_content = ""
-#                 #         collected_sources = []
-                
-#                 #     if collected_sources:
-#                 #         # step = {
-#                 #         #     "type": "reasoning",
-#                 #         #     "step": "Sources Found",
-#                 #         #     "content": f"Retrieved {len(collected_sources)} sources",
-#                 #         #     "sources": collected_sources,
-#                 #         #     "timestamp": datetime.now(timezone.utc).isoformat()
-#                 #         # }
-                        
-#                 #         step = {
-#                 #             "type": "reasoning",
-#                 #             "step": "Sources Found",
-#                 #             "content": message.content,
-#                 #             "found_sources": len(collected_sources),
-#                 #             "sources": collected_sources,
-#                 #             "query": message.content,  # NEW
-#                 #             "category": "Overview",  # NEW
-#                 #             "timestamp": datetime.now(timezone.utc).isoformat()
-#                 #         }
-#                 #         reasoning_steps.append(step)
-#                 #         yield json.dumps(step) + "\n"
-#                 #         await asyncio.sleep(0.2)
-                        
-#                 #     if search_content:
-#                 #         print("yielding-> " + search_content ) 
-#                 #         yield json.dumps({"type": "content", "text": search_content}) + "\n"
-#                 #         full_response += search_content
-
-#             # === SAVE TO DATABASE ===
-            
-#             # Save user message
-#             user_msg = Message(
-#                 conversation_id=uuid.UUID(conversation_id),
-#                 role="user",
-#                 content=message.content,
-#                 sources=None,
-#                 reasoning_steps=None,
-#                 assets=None,
-#                 lab_mode=is_lab_mode,
-#                 has_file=len(file_contents) > 0,
-#                 file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
-#             )
-#             db.add(user_msg) 
-#             print("SAVED USER MSG , CONV ID -> " + conversation_id) 
-            
-#             assistant_msg = Message(
-#                 conversation_id=uuid.UUID(conversation_id),
-#                 role="assistant",
-#                 content=full_response,
-#                 sources=json.dumps(finalSources) if finalSources else None,
-#                 reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
-#                 assets=json.dumps(extracted_assets) if extracted_assets else None,
-#                 lab_mode=is_lab_mode,
-#                 app= app if app else None
-#             )
-#             db.add(assistant_msg)
-            
-#             print("SAVED ASSISTANT MSG")
-#             # Update conversation metadata
-#             conv.updated_at = datetime.now(timezone.utc)
-#             conv.message_count = (conv.message_count or 0) + 2
-#             if conv.title == "New Conversation":
-#                 conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
-#                 print("CHANGED CONV TITLE")
-#             db.commit() 
-#             # Clear cache
-#             if conversation_manager.redis:
-#                 await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
-             
-#             yield json.dumps({"type": "done"}) + "\n"
-            
-#         except Exception as e:
-#             logger.error(f"Stream error: {e}", exc_info=True)
-#             yield json.dumps({"type": "error", "message": str(e)}) + "\n"
-        
-#     return StreamingResponse(
-#         stream_response(newConversation, files),  # Pass files directly
-#         media_type="text/plain",
-#         headers={
-#             "Cache-Control": "no-cache",
-#             "X-Accel-Buffering": "no",
-#             "Connection": "keep-alive",
-#             "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "*"
-#         }
-#     ) 
-
 @app.post("/chat/send/stream") 
 async def send_chat_message_stream(
     content: str = Form(...),
@@ -2207,7 +1649,7 @@ async def stream_response_direct(
             sources=None,
             reasoning_steps=None,
             assets=None,
-            lab_mode=is_lab_mode,
+            lab_mode=True,
             has_file=len(file_contents) > 0,
             file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
         )
@@ -2223,7 +1665,7 @@ async def stream_response_direct(
             reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
             assets=json.dumps(extracted_assets) if extracted_assets else None,
             lab_mode=is_lab_mode,
-            app=app if app else None,
+            app="app",
             celery_task_id=None  # ✅ NULL for direct responses
         )
         db.add(assistant_msg)
@@ -2315,6 +1757,213 @@ async def process_uploaded_files(uploaded_files: List[UploadFile]) -> list:
 # CELERY STREAMING FUNCTION (NEW)
 # ============================================================================
 
+# async def stream_response_celery(
+#     newConversation: bool,
+#     message: MessageSend,
+#     conversation_id: str,
+#     conv: Conversation,
+#     uploaded_files: List[UploadFile],
+#     db: Session
+# ):
+#     """
+#     Stream response from Celery worker via Redis pub/sub
+#     Only yields reasoning steps - final result saved to DB
+#     """
+    
+#     try:
+#         # Process uploaded files
+#         file_contents = []
+#         if uploaded_files and len(uploaded_files) > 0:
+#             yield json.dumps({
+#                 "type": "reasoning",
+#                 "step": "File Processing",
+#                 "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
+#                 "timestamp": datetime.now(timezone.utc).isoformat()
+#             }) + "\n"
+            
+#             # Use your existing file processing code
+#             file_contents = await process_uploaded_files(uploaded_files)
+        
+#         # Send metadata
+#         yield json.dumps({
+#             "type": "metadata",
+#             "conversation_id": conversation_id,
+#             "is_anonymous": conv.is_anonymous,
+#             "deep_search": message.deep_search,
+#             "lab_mode": message.lab_mode,
+#             "files_processed": len(file_contents)
+#         }) + "\n"
+        
+#         # Save user message
+#         user_msg = Message(
+#             conversation_id=uuid.UUID(conversation_id),
+#             role="user",
+#             content=message.content,
+#             has_file=len(file_contents) > 0,
+#             file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
+#         )
+#         db.add(user_msg)
+#         db.commit()
+        
+#         # Generate job ID and dispatch Celery task
+#         job_id = str(uuid.uuid4())
+        
+#         # Get conversation history
+#         db_messages = db.query(Message).filter(
+#             Message.conversation_id == uuid.UUID(conversation_id)
+#         ).order_by(Message.created_at).all()
+#         messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
+        
+#         # Dispatch task
+#         from tasks import deep_search_task
+#         task = deep_search_task.apply_async(
+#             args=[
+#                 job_id,
+#                 conversation_id,
+#                 message.content,
+#                 messages_list,
+#                 file_contents,
+#                 message.lab_mode
+#             ],
+#             task_id=f"search-{job_id}",
+#             queue='llm_worker_queue' 
+#         )
+        
+#         print(f"🚀 Dispatched Celery task: {task.id} for job: {job_id}")
+        
+#         # Subscribe to Redis and poll for updates
+#         from redis_client import get_pubsub
+#         pubsub = get_pubsub()
+#         channel = f"job:{job_id}"
+#         pubsub.subscribe(channel)
+        
+#         print(f"🎧 Subscribed to Redis channel: {channel}")
+        
+#         # Poll with timeout
+#         timeout_seconds = 30 * 60  # 30 minutes
+#         start_time = time.time()
+#         final_result = None
+        
+#         while True:
+#             # Check timeout
+#             if time.time() - start_time > timeout_seconds:
+#                 print(f"⏰ Timeout exceeded for job {job_id}")
+                
+#                 # Revoke Celery task
+#                 from celery_app import celery_app
+#                 celery_app.control.revoke(task.id, terminate=True)
+                
+#                 # Save error message
+#                 error_msg = Message(
+#                     conversation_id=uuid.UUID(conversation_id),
+#                     role="assistant",
+#                     content="We're sorry, but your request took too long to process. Please try again with a simpler query.",
+#                     celery_task_id=task.id
+#                 )
+#                 db.add(error_msg)
+                
+#                 # Update conversation
+#                 conv.updated_at = datetime.now(timezone.utc)
+#                 conv.message_count = (conv.message_count or 0) + 2
+#                 if conv.title == "New Conversation":
+#                     conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+#                 db.commit()
+                
+#                 # Yield error
+#                 yield json.dumps({
+#                     "type": "error",
+#                     "message": "Request timeout - please try again"
+#                 }) + "\n"
+                
+#                 yield json.dumps({"type": "done"}) + "\n"
+#                 break
+            
+#             # Get message from Redis
+#             msg = pubsub.get_message(ignore_subscribe_messages=True)
+            
+#             if msg and msg["type"] == "message":
+#                 data_str = msg["data"]
+#                 data = json.loads(data_str)
+                
+#                 msg_type = data.get("type")
+                
+#                 if msg_type == "reasoning":
+#                     # Yield reasoning to client (streaming)
+#                     yield data_str + "\n"
+                
+#                 elif msg_type == "complete":
+#                     # Don't yield - save to DB instead
+#                     final_result = data
+#                     print(f"✅ Received complete result from worker")
+                    
+#                     # Save assistant message
+#                     assistant_msg = Message(
+#                         conversation_id=uuid.UUID(conversation_id),
+#                         role="assistant",
+#                         content=final_result.get("content", ""),
+#                         sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
+#                         reasoning_steps=json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None,
+#                         assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
+#                         app=final_result.get("app"),
+#                         lab_mode=final_result.get("lab_mode", False),
+#                         celery_task_id=task.id
+#                     )
+#                     db.add(assistant_msg)
+                    
+#                     # Update conversation
+#                     conv.updated_at = datetime.now(timezone.utc)
+#                     conv.message_count = (conv.message_count or 0) + 2
+#                     if conv.title == "New Conversation":
+#                         conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+                    
+#                     db.commit()
+                    
+#                     # Clear cache
+#                     if conversation_manager.redis:
+#                         await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
+                    
+#                     # Yield done signal
+#                     yield json.dumps({"type": "done"}) + "\n"
+#                     break
+                
+#                 elif msg_type == "error":
+#                     # Save error message
+#                     error_msg = Message(
+#                         conversation_id=uuid.UUID(conversation_id),
+#                         role="assistant",
+#                         content=data.get("message", "An error occurred"),
+#                         celery_task_id=task.id
+#                     )
+#                     db.add(error_msg)
+                    
+#                     # Update conversation
+#                     conv.updated_at = datetime.now(timezone.utc)
+#                     conv.message_count = (conv.message_count or 0) + 2
+#                     if conv.title == "New Conversation":
+#                         conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
+                    
+#                     db.commit()
+                    
+#                     # Yield error
+#                     yield data_str + "\n"
+#                     yield json.dumps({"type": "done"}) + "\n"
+#                     break
+            
+#             # Small delay to prevent CPU spinning
+#             await asyncio.sleep(0.01)
+        
+#         # Cleanup
+#         pubsub.unsubscribe(channel)
+#         pubsub.close()
+        
+#     except Exception as e:
+#         logger.error(f"Celery stream error: {e}", exc_info=True)
+#         yield json.dumps({
+#             "type": "error",
+#             "message": "An unexpected error occurred"
+#         }) + "\n"
+#         yield json.dumps({"type": "done"}) + "\n"
+   
 async def stream_response_celery(
     newConversation: bool,
     message: MessageSend,
@@ -2325,8 +1974,11 @@ async def stream_response_celery(
 ):
     """
     Stream response from Celery worker via Redis pub/sub
-    Only yields reasoning steps - final result saved to DB
+    Creates placeholder assistant message and updates incrementally
     """
+    
+    assistant_msg_id = None
+    reasoning_step_counter = 0
     
     try:
         # Process uploaded files
@@ -2339,7 +1991,6 @@ async def stream_response_celery(
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }) + "\n"
             
-            # Use your existing file processing code
             file_contents = await process_uploaded_files(uploaded_files)
         
         # Send metadata
@@ -2352,16 +2003,19 @@ async def stream_response_celery(
             "files_processed": len(file_contents)
         }) + "\n"
         
-        # Save user message
+        # 1. SAVE USER MESSAGE IMMEDIATELY (complete, not placeholder)
         user_msg = Message(
             conversation_id=uuid.UUID(conversation_id),
             role="user",
             content=message.content,
             has_file=len(file_contents) > 0,
-            file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
+            file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None,
+            created_at=datetime.now(timezone.utc)
         )
         db.add(user_msg)
         db.commit()
+        db.refresh(user_msg)
+        print(f"✅ Saved user message: {user_msg.id}")
         
         # Generate job ID and dispatch Celery task
         job_id = str(uuid.uuid4())
@@ -2411,14 +2065,27 @@ async def stream_response_celery(
                 from celery_app import celery_app
                 celery_app.control.revoke(task.id, terminate=True)
                 
-                # Save error message
-                error_msg = Message(
-                    conversation_id=uuid.UUID(conversation_id),
-                    role="assistant",
-                    content="We're sorry, but your request took too long to process. Please try again with a simpler query.",
-                    celery_task_id=task.id
-                )
-                db.add(error_msg)
+                # Mark assistant message as failed (if exists)
+                if assistant_msg_id:
+                    assistant_msg = db.query(Message).filter(
+                        Message.id == assistant_msg_id
+                    ).first()
+                    if assistant_msg:
+                        assistant_msg.status = "failed"
+                        assistant_msg.content = "We're sorry, but your request took too long to process. Please try again with a simpler query."
+                        db.commit()
+                else:
+                    # Create failed message if placeholder wasn't created yet
+                    error_msg = Message(
+                        conversation_id=uuid.UUID(conversation_id),
+                        role="assistant",
+                        content="We're sorry, but your request took too long to process. Please try again with a simpler query.",
+                        celery_task_id=task.id,
+                        status="failed",
+                        created_at=datetime.now(timezone.utc)
+                    )
+                    db.add(error_msg)
+                    db.commit()
                 
                 # Update conversation
                 conv.updated_at = datetime.now(timezone.utc)
@@ -2448,25 +2115,110 @@ async def stream_response_celery(
                 if msg_type == "reasoning":
                     # Yield reasoning to client (streaming)
                     yield data_str + "\n"
+                    
+                    # 2. CREATE PLACEHOLDER ASSISTANT MESSAGE on first reasoning step
+                    if assistant_msg_id is None:
+                        assistant_msg = Message(
+                            conversation_id=uuid.UUID(conversation_id),
+                            role="assistant",
+                            content="",  # Placeholder - will be updated
+                            celery_task_id=task.id,
+                            status="streaming",
+                            created_at=datetime.now(timezone.utc)
+                        )
+                        db.add(assistant_msg)
+                        db.commit()
+                        db.refresh(assistant_msg)
+                        assistant_msg_id = assistant_msg.id
+                        print(f"✅ Created assistant message placeholder: {assistant_msg_id}")
+                    
+                    # 3. SAVE REASONING STEP to separate table (if using ReasoningStep model)
+                    # If you have ReasoningStep model:
+                    try:
+                        reasoning_step = ReasoningStep(
+                            message_id=assistant_msg_id,
+                            step_number=reasoning_step_counter,
+                            content=data.get("content", ""),
+                            query=data.get("query"),
+                            category=data.get("category"),
+                            sources=json.dumps(data.get("sources")) if data.get("sources") else None,
+                            created_at=datetime.now(timezone.utc)
+                        )
+                        db.add(reasoning_step)
+                        db.commit()
+                        reasoning_step_counter += 1
+                        print(f"✅ Saved reasoning step {reasoning_step_counter} for message {assistant_msg_id}")
+                    except Exception as e:
+                        print(f"⚠️ Could not save reasoning step: {e}")
+                        # Continue even if reasoning step fails
+                
+                elif msg_type == "content":
+                    # Yield content to client
+                    yield data_str + "\n"
+                    
+                    # Create placeholder if doesn't exist (in case content comes before reasoning)
+                    if assistant_msg_id is None:
+                        assistant_msg = Message(
+                            conversation_id=uuid.UUID(conversation_id),
+                            role="assistant",
+                            content=data.get("text", ""),
+                            celery_task_id=task.id,
+                            status="streaming",
+                            created_at=datetime.now(timezone.utc)
+                        )
+                        db.add(assistant_msg)
+                        db.commit()
+                        db.refresh(assistant_msg)
+                        assistant_msg_id = assistant_msg.id
+                        print(f"✅ Created assistant message placeholder: {assistant_msg_id}")
+                    else:
+                        # Update content incrementally
+                        assistant_msg = db.query(Message).filter(
+                            Message.id == assistant_msg_id
+                        ).first()
+                        if assistant_msg:
+                            assistant_msg.content += data.get("text", "")
+                            db.commit()
                 
                 elif msg_type == "complete":
-                    # Don't yield - save to DB instead
+                    # Final result - update existing message
                     final_result = data
                     print(f"✅ Received complete result from worker")
                     
-                    # Save assistant message
-                    assistant_msg = Message(
-                        conversation_id=uuid.UUID(conversation_id),
-                        role="assistant",
-                        content=final_result.get("content", ""),
-                        sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
-                        reasoning_steps=json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None,
-                        assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
-                        app=final_result.get("app"),
-                        lab_mode=final_result.get("lab_mode", False),
-                        celery_task_id=task.id
-                    )
-                    db.add(assistant_msg)
+                    if assistant_msg_id:
+                        # Update existing placeholder message
+                        assistant_msg = db.query(Message).filter(
+                            Message.id == assistant_msg_id
+                        ).first()
+                        
+                        if assistant_msg:
+                            assistant_msg.content = final_result.get("content", "")
+                            assistant_msg.sources = json.dumps(final_result.get("sources")) if final_result.get("sources") else None
+                            # Don't save reasoning_steps here - they're already in ReasoningStep table
+                            assistant_msg.assets = json.dumps(final_result.get("assets")) if final_result.get("assets") else None
+                            assistant_msg.app = final_result.get("app")
+                            assistant_msg.lab_mode = final_result.get("lab_mode", False)
+                            assistant_msg.status = "complete"
+                            db.commit()
+                            print(f"✅ Updated assistant message {assistant_msg_id} to complete")
+                    else:
+                        # Fallback: create message if somehow placeholder wasn't created
+                        assistant_msg = Message(
+                            conversation_id=uuid.UUID(conversation_id),
+                            role="assistant",
+                            content=final_result.get("content", ""),
+                            sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
+                            reasoning_steps=json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None,
+                            assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
+                            app=final_result.get("app"),
+                            lab_mode=final_result.get("lab_mode", False),
+                            celery_task_id=task.id,
+                            status="complete",
+                            created_at=datetime.now(timezone.utc)
+                        )
+                        db.add(assistant_msg)
+                        db.commit()
+                        print(f"⚠️ Created assistant message in complete handler (fallback)")
                     
                     # Update conversation
                     conv.updated_at = datetime.now(timezone.utc)
@@ -2485,14 +2237,31 @@ async def stream_response_celery(
                     break
                 
                 elif msg_type == "error":
-                    # Save error message
-                    error_msg = Message(
-                        conversation_id=uuid.UUID(conversation_id),
-                        role="assistant",
-                        content=data.get("message", "An error occurred"),
-                        celery_task_id=task.id
-                    )
-                    db.add(error_msg)
+                    # Handle error
+                    error_message = data.get("message", "An error occurred")
+                    print(f"❌ Worker error: {error_message}")
+                    
+                    if assistant_msg_id:
+                        # Update existing placeholder
+                        assistant_msg = db.query(Message).filter(
+                            Message.id == assistant_msg_id
+                        ).first()
+                        if assistant_msg:
+                            assistant_msg.status = "failed"
+                            assistant_msg.content = f"Error: {error_message}"
+                            db.commit()
+                    else:
+                        # Create error message
+                        error_msg = Message(
+                            conversation_id=uuid.UUID(conversation_id),
+                            role="assistant",
+                            content=f"Error: {error_message}",
+                            celery_task_id=task.id,
+                            status="failed",
+                            created_at=datetime.now(timezone.utc)
+                        )
+                        db.add(error_msg)
+                        db.commit()
                     
                     # Update conversation
                     conv.updated_at = datetime.now(timezone.utc)
@@ -2516,6 +2285,20 @@ async def stream_response_celery(
         
     except Exception as e:
         logger.error(f"Celery stream error: {e}", exc_info=True)
+        
+        # Mark message as failed if it exists
+        if assistant_msg_id:
+            try:
+                assistant_msg = db.query(Message).filter(
+                    Message.id == assistant_msg_id
+                ).first()
+                if assistant_msg:
+                    assistant_msg.status = "failed"
+                    assistant_msg.content = f"Error: An unexpected error occurred"
+                    db.commit()
+            except:
+                pass
+        
         yield json.dumps({
             "type": "error",
             "message": "An unexpected error occurred"
@@ -2672,6 +2455,38 @@ async def list_conversations(
         for conv in conversations
     ]
  
+# @app.get("/conversations/{conversation_id}/messages")
+# async def get_messages(
+#     conversation_id: str,
+#     db: Session = Depends(get_db),
+#     current_user: Optional[dict] = Depends(get_current_user)
+# ):
+#     conv = db.query(Conversation).filter(Conversation.id == uuid.UUID(conversation_id)).first()
+    
+#     if not conv:
+#         raise HTTPException(status_code=404, detail="Conversation not found")
+    
+#     if current_user and conv.user_id and str(conv.user_id) != current_user["user_id"]:
+#         raise HTTPException(status_code=403, detail="Not authorized")
+    
+#     messages = db.query(Message).filter(
+#         Message.conversation_id == uuid.UUID(conversation_id)
+#     ).order_by(Message.created_at).all()
+    
+#     return [{
+#         "id": str(m.id),
+#         "role": m.role,
+#         "content": m.content,
+#         "has_file": m.has_file,
+#         "created_at": m.created_at.isoformat(),
+#         "sources": json.loads(m.sources) if m.sources else None,
+#         "reasoning_steps": json.loads(m.reasoning_steps) if m.reasoning_steps else None,
+#         "assets": json.loads(m.assets) if m.assets else None,  # NEW,
+#         "app":  m.app,
+#         "lab_mode": m.lab_mode,  # NEW
+#         "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
+#     } for m in messages]
+
 @app.get("/conversations/{conversation_id}/messages")
 async def get_messages(
     conversation_id: str,
@@ -2690,20 +2505,55 @@ async def get_messages(
         Message.conversation_id == uuid.UUID(conversation_id)
     ).order_by(Message.created_at).all()
     
-    return [{
-        "id": str(m.id),
-        "role": m.role,
-        "content": m.content,
-        "has_file": m.has_file,
-        "created_at": m.created_at.isoformat(),
-        "sources": json.loads(m.sources) if m.sources else None,
-        "reasoning_steps": json.loads(m.reasoning_steps) if m.reasoning_steps else None,
-        "assets": json.loads(m.assets) if m.assets else None,  # NEW,
-        "app":  m.app,
-        "lab_mode": m.lab_mode,  # NEW
-        "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
-    } for m in messages]
-
+    result = []
+    for m in messages:
+        # Fetch reasoning steps from ReasoningStep table
+        reasoning_steps = None
+        if m.role == "assistant":
+            # Query ReasoningStep table for this message
+            steps = db.query(ReasoningStep).filter(
+                ReasoningStep.message_id == m.id
+            ).order_by(ReasoningStep.step_number).all()
+            
+            if steps:
+                reasoning_steps = []
+                for step in steps:
+                    step_data = {
+                        "step": step.content,
+                        "content": step.content,
+                        "step_number": step.step_number
+                    }
+                    
+                    # Add optional fields if they exist
+                    if step.query:
+                        step_data["query"] = step.query
+                    if step.category:
+                        step_data["category"] = step.category
+                    if step.sources:
+                        try:
+                            step_data["sources"] = json.loads(step.sources)
+                        except:
+                            step_data["sources"] = []
+                    
+                    reasoning_steps.append(step_data)
+        
+        result.append({
+            "id": str(m.id),
+            "role": m.role,
+            "content": m.content,
+            "has_file": m.has_file,
+            "created_at": m.created_at.isoformat(),
+            "sources": json.loads(m.sources) if m.sources else None,
+            "reasoning_steps": reasoning_steps,  # From ReasoningStep table
+            "assets": json.loads(m.assets) if m.assets else None,
+            "app": m.app,
+            "lab_mode": m.lab_mode,
+             "status": m.status,
+            "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
+        })
+    
+    return result
+    
 @app.delete("/conversations/{conversation_id}")
 async def delete_conversation(
     conversation_id: str,
