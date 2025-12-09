@@ -37,7 +37,7 @@ function toggleConversationsPanel() {
 // On mobile, start with panel collapsed (hidden)
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile: start hidden
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 1024) {
         document.querySelector('.conversations-panel')?.classList.add('mobile-hidden');
     }
     
@@ -1535,7 +1535,7 @@ function showSplitScreen(appHtml) {
     }
     
     // Move input wrapper to split view (desktop only)
-    if (window.innerWidth > 768) {
+    if (window.innerWidth > 1024) {
         const inputWrapper = document.querySelector('.input-wrapper');
         const splitPlaceholder = document.getElementById('split-input-placeholder');
         
@@ -2058,7 +2058,7 @@ function loadAppInSplit(htmlContent) {
             });
         });
     }
- if (window.innerWidth <= 768) {
+ if (window.innerWidth <= 1024) {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             const inputWrapper = document.querySelector('.input-wrapper');
@@ -8172,7 +8172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     otherIcons.forEach(icon => {
         icon.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1024) {
                 const panel = document.querySelector('.conversations-panel');
                 if (panel) { 
                     const wasCollapsed = panel.classList.contains('collapsed');

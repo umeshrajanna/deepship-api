@@ -1420,7 +1420,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .container {
         flex-direction: column;
     }
@@ -5143,7 +5143,7 @@ body.split-screen-active .split-left #message-input {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .split-tabs {
         padding: 8px 12px;
     }
@@ -8367,7 +8367,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 }
 
 /* Mobile Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .conversations-selection-panel {
         width: 100%;
         left: -100%;
@@ -8798,7 +8798,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 }
 
 /* Mobile Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .premium-popup-modal {
         width: 95%;
         max-width: none;
@@ -9604,7 +9604,7 @@ body .conversations-panel.collapsed ~ .cloud-wizard-panel {
     z-index: 10002 !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .cloud-wizard-backdrop {
         left: 0;
         width: 100%;
@@ -10659,7 +10659,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
 /* ============================================
    MOBILE - KEEP ICON SIDEBAR VISIBLE
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     
     /* Icon sidebar - always visible */
     /* .conversations-panel {
@@ -10678,7 +10678,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     } */
     
     /* Mobile Panel - Must be at end of file */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .conversations-panel {
         position: fixed !important;
         top: 0 !important;
@@ -10963,7 +10963,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
    MOBILE SPLIT SCREEN MODE - FINAL VERSION
    ============================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     
     /* Lock body and hide all other UI */
     body.split-screen-active {
@@ -11127,7 +11127,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
    MOBILE INPUT - NORMAL MODE (not split screen)
    ============================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     
     /* Input wrapper - 90% width on mobile when NOT in split screen */
     body:not(.split-screen-active) .input-wrapper {
@@ -11159,7 +11159,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
    MOBILE SPLIT SCREEN MODE
    ============================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     
     /* ... [keep all your existing split screen CSS] ... */
     
@@ -11183,7 +11183,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
  
 
 /* Mobile compact fix - 20% SMALLER + CENTERED */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .premium-popup-backdrop {
         z-index: 99998 !important;
     }
@@ -11323,7 +11323,7 @@ body.logged-in .use-cases-icon-btn {
 
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     /* Make sure logo is visible in mobile panel */
     .conversations-panel .panel-logo {
         display: block !important;
