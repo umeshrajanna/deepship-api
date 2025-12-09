@@ -8184,3 +8184,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Shows device info on your phone screen
+document.addEventListener('DOMContentLoaded', function() {
+    const info = document.createElement('div');
+    info.style.cssText = 'position: fixed; top: 10px; left: 10px; background: red; color: white; padding: 15px; z-index: 999999; font-size: 14px; border-radius: 8px;';
+    info.innerHTML = `
+        Width: ${window.innerWidth}px<br>
+        Height: ${window.innerHeight}px<br>
+        Touch: ${('ontouchstart' in window) ? 'YES' : 'NO'}<br>
+        Mobile CSS active: ${window.innerWidth <= 1024 ? 'YES' : 'NO'}
+    `;
+    document.body.appendChild(info);
+    
+    // Tap to dismiss
+    info.addEventListener('click', () => info.remove());
+});
