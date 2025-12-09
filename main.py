@@ -6,7 +6,7 @@ import json
 import asyncio
 from datetime import datetime
 
-from models import SearchJob, JobStatus
+from models import *
 from database import get_db, init_db
 from redis_client import redis_client, get_pubsub
 from config import config
@@ -19,8 +19,6 @@ async def lifespan(app: FastAPI):
     
     try:
         Base.metadata.create_all(bind=engine)
-        logger.info("DB URL IS -> " + DATABASE_URL)
-        # logger.info("✅ Database initialized")
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
     
@@ -29,9 +27,7 @@ async def lifespan(app: FastAPI):
         # logger.info("✅ Redis connected")
     except Exception as e:
         logger.warning(f"⚠️ Redis connection failed: {e}")
-    
-    # logger.info("✅ Application started")
-    
+     
     yield
     
     # logger.info("🛑 Shutting down...")
@@ -40,20 +36,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(title="Deep Search API", lifespan=lifespan)
-
-# CORS middleware
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=[
-#         "http://localhost:8084",
-#         "http://localhost:8082",
-#         "https://noirai-production.up.railway.app",
-#     ],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
+ 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -73,54 +56,23 @@ app.add_middleware(
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
-        # Map job_id -> set of WebSocket connections
         self.active_connections: Dict[str, Set[WebSocket]] = {}
-        # Map job_id -> pubsub listener task
         self.pubsub_tasks: Dict[str, asyncio.Task] = {}
     
-    # async def connect(self, websocket: WebSocket, job_id: str):
-    #     """Add a WebSocket connection for a job"""
-    #     await websocket.accept()
-        
-    #     if job_id not in self.active_connections:
-    #         self.active_connections[job_id] = set()
-        
-    #     self.active_connections[job_id].add(websocket)
-        
-    #     # Start listening to Redis pub/sub if not already listening
-    #     if job_id not in self.pubsub_tasks:
-    #         task = asyncio.create_task(self._listen_to_redis(job_id))
-    #         self.pubsub_tasks[job_id] = task
-    
     async def connect(self, websocket: WebSocket, job_id: str):
-        """Add a WebSocket connection for a job"""
-        print(f"[MANAGER] 🔌 Connect called for job_id: {job_id}")
-        
-        # await websocket.accept()
-        print(f"[MANAGER] ✅ WebSocket accepted")
-        
         if job_id not in self.active_connections:
             self.active_connections[job_id] = set()
-            print(f"[MANAGER] 📝 Created new connection set for {job_id}")
         
         self.active_connections[job_id].add(websocket)
-        print(f"[MANAGER] 👥 Total connections for {job_id}: {len(self.active_connections[job_id])}")
         
-        # Start listening to Redis if not already listening
         if job_id not in self.pubsub_tasks:
-            print(f"[MANAGER] 🚀 Creating Redis listener task for {job_id}")
             task = asyncio.create_task(self._listen_to_redis(job_id))
             self.pubsub_tasks[job_id] = task
-            print(f"[MANAGER] ✅ Task created: {task}")
-        else:
-            print(f"[MANAGER] ♻️ Redis listener already exists for {job_id}")
             
     def disconnect(self, websocket: WebSocket, job_id: str):
-        """Remove a WebSocket connection"""
         if job_id in self.active_connections:
             self.active_connections[job_id].discard(websocket)
             
-            # If no more connections for this job, stop listening
             if not self.active_connections[job_id]:
                 del self.active_connections[job_id]
                 
@@ -128,67 +80,18 @@ class ConnectionManager:
                     self.pubsub_tasks[job_id].cancel()
                     del self.pubsub_tasks[job_id]
     
-    # async def _listen_to_redis(self, job_id: str):
-    #     """Listen to Redis pub/sub for a specific job and forward to WebSockets"""
-    #     pubsub = get_pubsub()
-    #     channel = f"job:{job_id}"
-        
-    #     try:
-    #         pubsub.subscribe(channel)
-            
-    #         # Listen for messages
-    #         for message in pubsub.listen():
-    #             if message["type"] == "message":
-    #                 data = message["data"]
-                    
-    #                 # Send to all connected WebSockets for this job
-    #                 if job_id in self.active_connections:
-    #                     disconnected = set()
-                        
-    #                     for websocket in self.active_connections[job_id]:
-    #                         try:
-    #                             await websocket.send_text(data)
-    #                         except Exception:
-    #                             disconnected.add(websocket)
-                        
-    #                     # Clean up disconnected WebSockets
-    #                     for ws in disconnected:
-    #                         self.disconnect(ws, job_id)
-                        
-    #                     # Check if job is complete
-    #                     try:
-    #                         msg = json.loads(data)
-    #                         if msg.get("type") in ["complete", "error"]:
-    #                             # Job finished, can stop listening after a delay
-    #                             await asyncio.sleep(5)
-    #                             break
-    #                     except json.JSONDecodeError:
-    #                         pass
-                
-    #     except asyncio.CancelledError:
-    #         pass
-    #     finally:
-    #         pubsub.unsubscribe(channel)
-    #         pubsub.close()
 
     async def _listen_to_redis(self, job_id: str):
-        """Listen to Redis pub/sub for a specific job and forward to WebSockets"""
         pubsub = get_pubsub()
         channel = f"job:{job_id}"
         
-        print(f"[WS] 🎧 Subscribing to channel: {channel}")
-        
         try:
             pubsub.subscribe(channel)
-            print(f"[WS] ✅ Subscribed successfully")
-            
-            # Use get_message() instead of listen() for async compatibility
             while True:
                 message = pubsub.get_message(ignore_subscribe_messages=True)
                 
                 if message and message["type"] == "message":
                     data = message["data"]
-                    print(f"[WS] 📨 Got message, forwarding to {len(self.active_connections.get(job_id, []))} clients")
                     
                     # Send to all connected WebSockets for this job
                     if job_id in self.active_connections:
@@ -197,7 +100,6 @@ class ConnectionManager:
                         for websocket in self.active_connections[job_id]:
                             try:
                                 await websocket.send_text(data)
-                                print(f"[WS] ✅ Sent to client")
                             except Exception as e:
                                 print(f"[WS] ❌ Failed to send: {e}")
                                 disconnected.add(websocket)
@@ -210,7 +112,6 @@ class ConnectionManager:
                         try:
                             msg = json.loads(data)
                             if msg.get("type") in ["complete", "error"]:
-                                print(f"[WS] 🏁 Job finished, stopping listener in 5s")
                                 await asyncio.sleep(5)
                                 break
                         except json.JSONDecodeError:
@@ -222,7 +123,6 @@ class ConnectionManager:
         except asyncio.CancelledError:
             print(f"[WS] ⚠️ Listener cancelled for {job_id}")
         finally:
-            print(f"[WS] 🔌 Unsubscribing from {channel}")
             pubsub.unsubscribe(channel)
             pubsub.close()
         
@@ -230,12 +130,10 @@ manager = ConnectionManager()
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup"""
     init_db()
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 @app.post("/search")
@@ -243,15 +141,6 @@ async def create_search(
     query: str,
     db: Session = Depends(get_db)
 ):
-    """
-    Create a new search job
-    
-    Args:
-        query: Search query string
-        
-    Returns:
-        Job ID and status
-    """
     if not query or len(query.strip()) == 0:
         raise HTTPException(status_code=400, detail="Query cannot be empty")
     
@@ -261,23 +150,14 @@ async def create_search(
     db.commit()
     db.refresh(job)
     
-    print(f"📝 Created job: {job.id} for query: '{query}'")
-    
     # Dispatch Celery task
     task = deep_search_task.apply_async(
         args=[job.id, query],
         task_id=f"search-{job.id}"
     )
     
-    print(f"🚀 Dispatched task to Celery: task_id={task.id}, job_id={job.id}")
-    print(f"   Task state: {task.state}")
-    print(f"   Queue: celery (default)")
-    
-    # Update job with task ID
     job.celery_task_id = task.id
     db.commit()
-    
-    print(f"✅ Job {job.id} saved with celery_task_id: {task.id}")
     
     return {
         "job_id": job.id,
@@ -290,15 +170,7 @@ async def get_search_status(
     job_id: str,
     db: Session = Depends(get_db)
 ):
-    """
-    Get the current status of a search job
-    
-    Args:
-        job_id: The job ID
-        
-    Returns:
-        Job details including status and results
-    """
+ 
     job = db.query(SearchJob).filter(SearchJob.id == job_id).first()
     
     if not job:
@@ -306,7 +178,6 @@ async def get_search_status(
     
     response = job.to_dict()
     
-    # Parse result JSON if available
     if job.result:
         try:
             response["result"] = json.loads(job.result)
@@ -315,105 +186,22 @@ async def get_search_status(
     
     return response
 
-# @app.websocket("/ws")
-# async def websocket_endpoint(websocket: WebSocket):
-#     """
-#     WebSocket endpoint for real-time updates
-    
-#     Client should send: {"action": "subscribe", "job_id": "xxx"}
-#     """
-#     await websocket.accept()
-#     current_job_id = None
-    
-#     try:
-#         while True:
-#             # Receive message from client
-#             data = await websocket.receive_text()
-            
-#             try:
-#                 message = json.loads(data)
-#                 action = message.get("action")
-                
-#                 if action == "subscribe":
-#                     job_id = message.get("job_id")
-                    
-#                     if not job_id:
-#                         await websocket.send_json({
-#                             "type": "error",
-#                             "content": "job_id is required"
-#                         })
-#                         continue
-                    
-#                     # Unsubscribe from previous job if any
-#                     if current_job_id:
-#                         manager.disconnect(websocket, current_job_id)
-                    
-#                     # Subscribe to new job
-#                     current_job_id = job_id
-#                     await manager.connect(websocket, job_id)
-                    
-#                     await websocket.send_json({
-#                         "type": "subscribed",
-#                         "content": f"Subscribed to job {job_id}"
-#                     })
-                
-#                 elif action == "unsubscribe":
-#                     if current_job_id:
-#                         manager.disconnect(websocket, current_job_id)
-#                         current_job_id = None
-                    
-#                     await websocket.send_json({
-#                         "type": "unsubscribed",
-#                         "content": "Unsubscribed successfully"
-#                     })
-                
-#                 elif action == "ping":
-#                     await websocket.send_json({
-#                         "type": "pong",
-#                         "content": "Connection alive"
-#                     })
-                
-#                 else:
-#                     await websocket.send_json({
-#                         "type": "error",
-#                         "content": f"Unknown action: {action}"
-#                     })
-                    
-#             except json.JSONDecodeError:
-#                 await websocket.send_json({
-#                     "type": "error",
-#                     "content": "Invalid JSON"
-#                 })
-    
-#     except WebSocketDisconnect:
-#         if current_job_id:
-#             manager.disconnect(websocket, current_job_id)
-
+ 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for real-time updates
-    
-    Client should send: {"action": "subscribe", "job_id": "xxx"}
-    """
-    print("[WS_ENDPOINT] 🔌 New WebSocket connection")
     await websocket.accept()
     current_job_id = None
     
     try:
         while True:
-            # Receive message from client
             data = await websocket.receive_text()
-            print(f"[WS_ENDPOINT] 📩 Received: {data}")
             
             try:
                 message = json.loads(data)
                 action = message.get("action")
-                print(f"[WS_ENDPOINT] 🎬 Action: {action}")
                 
                 if action == "subscribe":
                     job_id = message.get("job_id")
-                    print(f"[WS_ENDPOINT] 📌 Subscribe to job_id: {job_id}")
                     
                     if not job_id:
                         await websocket.send_json({
@@ -424,22 +212,18 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     # Unsubscribe from previous job if any
                     if current_job_id:
-                        print(f"[WS_ENDPOINT] 🔄 Unsubscribing from previous: {current_job_id}")
                         manager.disconnect(websocket, current_job_id)
                     
                     # Subscribe to new job
                     current_job_id = job_id
-                    print(f"[WS_ENDPOINT] ➡️ Calling manager.connect()")
                     await manager.connect(websocket, job_id)
                     
                     await websocket.send_json({
                         "type": "subscribed",
                         "content": f"Subscribed to job {job_id}"
                     })
-                    print(f"[WS_ENDPOINT] ✅ Subscription confirmed")
                 
                 elif action == "unsubscribe":
-                    print(f"[WS_ENDPOINT] 🔕 Unsubscribe action")
                     if current_job_id:
                         manager.disconnect(websocket, current_job_id)
                         current_job_id = None
@@ -450,14 +234,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     })
                 
                 elif action == "ping":
-                    print(f"[WS_ENDPOINT] 🏓 Ping received")
                     await websocket.send_json({
                         "type": "pong",
                         "content": "Connection alive"
                     })
                 
                 else:
-                    print(f"[WS_ENDPOINT] ❓ Unknown action: {action}")
                     await websocket.send_json({
                         "type": "error",
                         "content": f"Unknown action: {action}"
@@ -478,7 +260,6 @@ async def websocket_endpoint(websocket: WebSocket):
             
 @app.get("/")
 async def root():
-    """Root endpoint with API information"""
     return {
         "service": "Deep Search API",
         "version": "1.0.0",
@@ -490,16 +271,6 @@ async def root():
         }
     }
 
-
-
-# ======================= FROM V0 ======================================================
-
-
-#!/usr/bin/env python3
-"""
-Enhanced Chat System - Complete Implementation with spaCy NER
-All Features: Streaming, File Upload, Reactions, Export, Auth, Rate Limiting, Multi-Modal, Search, etc.
-"""
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Header, Request,Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -546,7 +317,6 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import httpx
 
 async def generate_message_markdown(message_content: str, sources: list = None) -> str:
-    """Generate Markdown file content"""
     md_content = f"# NOIR AI Response\n\n"
     md_content += f"{message_content}\n\n"
     
@@ -564,7 +334,6 @@ async def generate_message_markdown(message_content: str, sources: list = None) 
 
 
 async def generate_message_pdf(message_content: str, sources: list = None) -> BytesIO:
-    """Generate PDF from message content with proper heading support"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72,
                           topMargin=72, bottomMargin=18)
@@ -652,14 +421,11 @@ async def generate_message_pdf(message_content: str, sources: list = None) -> By
     return buffer
 
 async def generate_message_docx(message_content: str, sources: list = None) -> BytesIO:
-    """Generate DOCX file with proper heading support"""
     doc = Document()
     
-    # Title
     title = doc.add_heading('NOIR AI Response', 0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Process content line by line
     lines = message_content.split('\n')
     current_para = []
     
@@ -672,7 +438,6 @@ async def generate_message_docx(message_content: str, sources: list = None) -> B
                 current_para = []
             continue
         
-        # Handle headings
         if line.startswith('### '):
             if current_para:
                 doc.add_paragraph(' '.join(current_para))
@@ -717,30 +482,23 @@ async def generate_message_docx(message_content: str, sources: list = None) -> B
     buffer.seek(0)
     return buffer
 
-# Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuration loader - supports both .env and .conf files
 def load_config():
-    """Load configuration from .env or api_keys.conf (simple KEY=VALUE format)"""
     config_data = {}
     
-    # Try loading from api_keys.conf first (simple format)
     if os.path.exists('api_keys.conf'):
-        # logger.info("Loading configuration from api_keys.conf")
         try:
             with open('api_keys.conf', 'r') as f:
                 for line in f:
                     line = line.strip()
-                    # Skip empty lines and comments
                     if not line or line.startswith('#'):
                         continue
                     # Parse KEY=VALUE
                     if '=' in line:
                         key, value = line.split('=', 1)
                         config_data[key.strip()] = value.strip()
-            # logger.info("✓ Configuration loaded from api_keys.conf")
         except Exception as e:
             logger.error(f"Error reading api_keys.conf: {e}")
     else:
@@ -811,197 +569,53 @@ SMTP_HOST = config.get('SMTP_HOST', '')
 SMTP_PORT = config.get('FRONTEND_URL', '')  
 CLAUDE_API_KEY = config.get('CLAUDE_API_KEY', '')  
 
-# Apply log level
 logging.getLogger().setLevel(getattr(logging, LOG_LEVEL))
 
-# Log API key status at startup (masked for security)
-# logger.info("=== API Configuration Status ===")
-# logger.info(f"CLAUDE_API_KEY: {'✓ Configured' if CLAUDE_API_KEY else '✗ Missing'} ({len(CLAUDE_API_KEY) if CLAUDE_API_KEY else 0} chars)")
-# logger.info(f"SERPAPI_KEY: {'✓ Configured' if SERPAPI_KEY else '✗ Missing'} ({len(SERPAPI_KEY) if SERPAPI_KEY else 0} chars)")
-# logger.info(f"TWOCAPTCHA_KEY: {'✓ Configured' if TWOCAPTCHA_KEY else '✗ Missing'} ({len(TWOCAPTCHA_KEY) if TWOCAPTCHA_KEY else 0} chars)")
-# logger.info(f"ALPHA_VANTAGE_KEY: {'✓ Configured' if ALPHA_VANTAGE_KEY and ALPHA_VANTAGE_KEY != 'demo' else '⚠ Using demo'}")
-# logger.info(f"OPENWEATHER_KEY: {'✓ Configured' if OPENWEATHER_KEY and OPENWEATHER_KEY != 'demo' else '⚠ Using demo'}")
-# logger.info(f"NEWSAPI_KEY: {'✓ Configured' if NEWSAPI_KEY and NEWSAPI_KEY != 'demo' else '⚠ Using demo'}")
-# logger.info(f"APP_ENV: {APP_ENV}")
-# logger.info(f"LOG_LEVEL: {LOG_LEVEL}")
-# logger.info(f"BRIGHT_DATA_KEY: {'✓ Configured' if BRIGHT_DATA_KEY else '✗ Missing'} ({len(BRIGHT_DATA_KEY) if BRIGHT_DATA_KEY else 0} chars)")
-
-# logger.info("================================")
-
-# Load spaCy model
-# try:
-#     nlp = spacy.load("en_core_web_sm")
-#     # logger.info("✓ spaCy model loaded successfully")
-# except OSError:
-#     logger.warning("⚠ spaCy model not found. Run: python -m spacy download en_core_web_sm")
-#     nlp = None
-
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Database setup
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# class UserCreate(BaseModel):
+#     username: str
+#     email: str
+#     password: str
 
-class MagicLink(Base):
-    __tablename__ = "magic_links"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, nullable=False, index=True)
-    token = Column(String, unique=True, nullable=False, index=True)
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    used = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    used_at = Column(DateTime(timezone=True), nullable=True)
-    ip_address = Column(String, nullable=True)
-    
-# Database Models
-class User(Base):
-    # __tablename__ = "users"
-    # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # username = Column(String, unique=True, nullable=False)
-    # email = Column(String, unique=True, nullable=False)
-    # hashed_password = Column(String, nullable=False)
-    # created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    # conversations = relationship("Conversation", back_populates="user")
-    
-    __tablename__ = "users"
-    
-    # Core Identity
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False, index=True)
-    
-    # Authentication
-    hashed_password = Column(String, nullable=True)  # ✅ Changed to nullable=True
-    
-    # OAuth Data
-    oauth_provider = Column(String, nullable=True)  # 'google', 'github', etc.
-    oauth_id = Column(String, nullable=True, index=True)  # Google's user ID
-    
-    # Google Profile
-    google_name = Column(String, nullable=True)  # Full name from Google
-    google_picture = Column(Text, nullable=True)  # Profile picture URL
-    
-    # User Management
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_login = Column(DateTime(timezone=True), nullable=True)
-    
-    # Relationships
-    conversations = relationship("Conversation", back_populates="user")
+# class UserLogin(BaseModel):
+#     email: str
+#     password: str
 
-class Conversation(Base):
-    __tablename__ = "conversations"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    title = Column(String, default="New Conversation")
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    is_anonymous = Column(Boolean, default=False)
-    message_count = Column(Integer, default=0)
-    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
-    user = relationship("User", back_populates="conversations")
-class ReasoningStep(Base):
-    __tablename__ = "reasoning_steps"
-    
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    message_id = Column(String, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
-    step_number = Column(Integer, nullable=False)
-    content = Column(Text, nullable=False)
-    query = Column(Text, nullable=True)
-    category = Column(String, nullable=True)
-    sources = Column(Text, nullable=True)  # JSON string
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    # Relationship back to Message
-    message = relationship("Message", back_populates="reasoning_steps_rel")
-    
-class Message(Base):
-    __tablename__ = "messages"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False)
-    role = Column(String, nullable=False)
-    content = Column(Text, nullable=False)
-    has_file = Column(Boolean, default=False)
-    file_type = Column(String, nullable=True)
-    file_data = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    conversation = relationship("Conversation", back_populates="messages")
-    reactions = relationship("Reaction", back_populates="message", cascade="all, delete-orphan")
-    sources = Column(Text, nullable=True)
-    reasoning_steps = Column(Text, nullable=True)  # NEW: Store reasoning steps as JSON
-    assets = Column(Text, nullable=True)  # ADD THIS LINE
-    lab_mode = Column(Boolean, default=False)  # ADD THIS LINE
-    app = Column(Text, nullable=True)
-    celery_task_id = Column(String, nullable=True, index=True)
-    status = Column(String, default="complete")
-    reasoning_steps_rel = relationship(
-        "ReasoningStep", 
-        back_populates="message", 
-        cascade="all, delete-orphan",
-        order_by="ReasoningStep.step_number"
-    )
-    
-class Reaction(Base):
-    __tablename__ = "reactions"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    message_id = Column(UUID(as_uuid=True), ForeignKey("messages.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    reaction_type = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    message = relationship("Message", back_populates="reactions")
-    assets = Column(Text, nullable=True)  # NEW: Store assets as JSON
-    lab_mode = Column(Boolean, default=False)  # NEW: Track if lab mode was used
+# class ConversationCreate(BaseModel):
+#     title: Optional[str] = "New Conversation"
 
-# Pydantic Models
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
+# class MessageCreate(BaseModel):
+#     content: str
 
-class UserLogin(BaseModel):
-    email: str
-    password: str
+# class MessageSend(BaseModel):
+#     content: str
+#     conversation_id: Optional[str] = None
+#     deep_search: Optional[bool] = False    
+#     lab_mode: Optional[bool] = False  # NEW
 
-class ConversationCreate(BaseModel):
-    title: Optional[str] = "New Conversation"
+# class ReactionCreate(BaseModel):
+#     reaction_type: str
 
-class MessageCreate(BaseModel):
-    content: str
+# class MessageResponse(BaseModel):
+#     id: str
+#     role: str
+#     content: str
+#     has_file: bool
+#     created_at: datetime
+#     reactions: List[Dict]
 
-class MessageSend(BaseModel):
-    content: str
-    conversation_id: Optional[str] = None
-    deep_search: Optional[bool] = False    
-    lab_mode: Optional[bool] = False  # NEW
-
-class ReactionCreate(BaseModel):
-    reaction_type: str
-
-class MessageResponse(BaseModel):
-    id: str
-    role: str
-    content: str
-    has_file: bool
-    created_at: datetime
-    reactions: List[Dict]
-
-class ConversationResponse(BaseModel):
-    id: str
-    title: str
-    created_at: datetime
-    updated_at: datetime
-    message_count: int
+# class ConversationResponse(BaseModel):
+#     id: str
+#     title: str
+#     created_at: datetime
+#     updated_at: datetime
+#     message_count: int
  
 class ConversationManager: 
 
     def __init__(self, redis_url: str = REDIS_URL):
         self.claude_client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
-        
-        logger.info("OPEN AI KEY \n\n"+ OPENAI_KEY)
-        # self.openai_client = AsyncOpenAI(api_key = OPENAI_KEY) 
         
         self.redis_url = redis_url
         self.redis = None
@@ -1020,7 +634,6 @@ class ConversationManager:
     async def connect_redis(self):
         if not self.redis:
             self.redis = await aioredis.from_url(self.redis_url, decode_responses=True)
-            # logger.info("Connected to Redis")
         
         if not self.http_session:
             timeout = aiohttp.ClientTimeout(total=5, connect=2)
@@ -1036,7 +649,6 @@ class ConversationManager:
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
             )
-            # logger.info("HTTP connection pool initialized")
 
     async def disconnect_redis(self):
         if self.http_session:
@@ -1083,10 +695,7 @@ class ConversationManager:
             cache_key = f"scraped:{hashlib.md5(url.encode()).hexdigest()}"
             cached = await self.redis.get(cache_key)
             if cached:
-                # logger.info(f"[SCRAPER] ✓ Cache hit for {url}")
                 return cached
-            
-            # logger.info(f"[SCRAPER] Scraping URL: {url}")
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -1125,8 +734,6 @@ class ConversationManager:
                 if len(text) > 1000:
                     text = text[:1000] + "..."
                 
-                # logger.info(f"[SCRAPER] ✓ Extracted {len(text)} chars from {url}")
-                
                 if text:
                     await self.redis.setex(cache_key, 3600, text)
                 
@@ -1138,7 +745,6 @@ class ConversationManager:
         except Exception as e:
             logger.error(f"[SCRAPER] ❌ Error scraping {url}: {str(e)}")
             return None
-
         
 conversation_manager = ConversationManager()
  
@@ -1160,13 +766,8 @@ def verify_token(authorization: str = Header(None)) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
     
-    print("\nVERIFYING TOKEN\n")
     token = authorization.replace("Bearer ", "")
     try:
-        print("TOKEN -> " + JWT_SECRET)
-        print("TOKEN -> " + token)
-        print("JWT_ALGORITHM -> " + JWT_ALGORITHM)
-        
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
     except Exception as e:
@@ -1182,10 +783,6 @@ def get_current_user(authorization: str = Header(None)) -> Optional[dict]:
         return None
 
 def get_current_user_optional(authorization: str = Header(None)) -> Optional[dict]:
-    """
-    Optional authentication - returns user if token is valid, None if not provided
-    Used for endpoints that work for both authenticated and anonymous users
-    """
     if not authorization:
         return None
     
@@ -1218,10 +815,7 @@ def get_current_user_optional(authorization: str = Header(None)) -> Optional[dic
     except Exception as e:
         print(f"Auth error: {e}")
         return None
-# ===================================================
-# SIMPLIFIED ENDPOINTS - Auto-create conversation on first message
-# ============================================================================
-
+ 
 @app.post("/chat/send")
 async def send_chat_message(
     message: MessageSend,
@@ -1257,11 +851,6 @@ async def send_chat_message(
             "message_count": conv.message_count
         }
     
-    # if current_user:
-    #     if not rate_limiter.check_rate_limit(current_user["user_id"]):
-    #         raise HTTPException(status_code=429, detail="Rate limit exceeded")
-    
-    # response = await conversation_manager.chat_with_claude(conversation_id, message.content, db)
     response = await conversation_manager.chat_with_claude_enhanced(conversation_id, message.content, db)
     
     return {
@@ -1285,9 +874,25 @@ async def chat_stream_options(request: Request):
             "Access-Control-Max-Age": "86400"
         }
     )
- 
+
+
+from datetime import timedelta
+
+async def cleanup_old_anonymous_usage(db: Session, days_to_keep: int = 7):
+    """
+    Remove anonymous usage records older than X days.
+    """
+    cutoff_date = date.today() - timedelta(days=days_to_keep)
+    
+    db.query(AnonymousUsage).filter(
+        AnonymousUsage.usage_date < cutoff_date
+    ).delete()
+    
+    db.commit()
+    
 @app.post("/chat/send/stream") 
 async def send_chat_message_stream(
+    request: Request,
     content: str = Form(...),
     conversation_id: Optional[str] = Form(None),
     deep_search: Optional[bool] = Form(False),
@@ -1296,23 +901,6 @@ async def send_chat_message_stream(
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user)
 ):
-    """
-    Send message with streaming response
-    Routes to Celery for deep_search or lab_mode, otherwise direct LLM call
-    """
-    
-    # ===== DEBUG LOGGING =====
-    print("="*80)
-    print("🔥 ENDPOINT HIT: /chat/send/stream")
-    print(f"Content: {content[:50] if content else 'None'}...")
-    print(f"Conv ID: {conversation_id}")
-    print(f"Deep Search: {deep_search}")
-    print(f"Lab Mode: {lab_mode}")
-    print(f"Files: {len(files)}")
-    print(f"Current User: {current_user.get('user_id') if current_user else 'Anonymous'}")
-    print("="*80)
-    
-    # Create message object
     message = MessageSend(
         content=content,
         conversation_id=conversation_id,
@@ -1320,13 +908,74 @@ async def send_chat_message_stream(
         lab_mode=lab_mode
     )
     
+    client_ip = get_client_ip(request)
+    
+    # Check if anonymous user
+    is_anonymous = current_user is None
+    
+    if is_anonymous:
+        # Check daily limit by IP
+        is_allowed, remaining = await check_anonymous_limit(db, client_ip)
+        
+        if not is_allowed:
+            async def limit_response():
+                yield json.dumps({
+                    "type": "error",
+                    "message": "Daily message limit reached for anonymous users",
+                    "limit_reached": True,
+                    "remaining": 0
+                }) + "\n"
+                yield json.dumps({"type": "done"}) + "\n"
+            
+            return StreamingResponse(
+                limit_response(),
+                media_type="text/plain"
+            )
+        
+        # Increment usage counter
+        await increment_anonymous_usage(db, client_ip)
+    
+    
+    else:
+        user_id = current_user.get("user_id")
+        user = db.query(User).filter(User.id == user_id).first()
+        if current_user:
+            user_id = current_user.get("user_id")
+            user = db.query(User).filter(User.id == user_id).first()
+            
+            # If user has premium credits, deduct one
+            if user.message_credits > 0:
+                user.message_credits -= 1
+                db.commit()
+        else:
+            # Check daily limit for logged-in user
+            is_allowed, remaining = await check_user_daily_limit(db, user_id)
+            
+            if not is_allowed:
+                async def limit_response():
+                    yield json.dumps({
+                        "type": "error",
+                        "message": f"Daily message limit reached ({LOGGED_IN_DAILY_LIMIT} messages per day). Upgrade for unlimited messages!",
+                        "limit_reached": True,
+                        "user_limit": True,  # ✅ Indicate this is a user limit
+                        "remaining": 0
+                    }) + "\n"
+                    yield json.dumps({"type": "done"}) + "\n"
+                
+                return StreamingResponse(
+                    limit_response(),
+                    media_type="text/plain"
+                )
+            
+            # Increment user's daily usage
+            await increment_user_daily_usage(db, user_id)
+        
     conversation_id = message.conversation_id
     newConversation = False
     
     try:
         # ===== CREATE OR GET CONVERSATION =====
         if not conversation_id:
-            print("NO CONV FOUND - Creating new conversation")
             conversation = Conversation(
                 user_id=uuid.UUID(current_user["user_id"]) if current_user else None,
                 title="New Conversation",
@@ -1338,10 +987,7 @@ async def send_chat_message_stream(
             db.refresh(conversation)
             conversation_id = str(conversation.id)
             conv = conversation
-            print(f"✅ CREATED CONV: {conversation_id}")
         else:
-            print(f"CONV FOUND: {conversation_id}")
-            # Use row-level lock for existing conversation
             conv = db.query(Conversation).filter(
                 Conversation.id == uuid.UUID(conversation_id)
             ).with_for_update().first()
@@ -1356,38 +1002,31 @@ async def send_chat_message_stream(
         raise HTTPException(status_code=500, detail=str(e))
     
     # ===== CHECK ANONYMOUS MESSAGE LIMIT =====
-    if conv.is_anonymous and conv.message_count >= 1000:
-        logger.info("Hit anonymous limit, returning limit message")
+    # if conv.is_anonymous and conv.message_count >= 2:
+    #     async def limit_response():
+    #         yield json.dumps({
+    #             "type": "error",
+    #             "message": "Message limit reached",
+    #             "limit_reached": True
+    #         }) + "\n"
+    #         yield json.dumps({"type": "done"}) + "\n"
         
-        async def limit_response():
-            yield json.dumps({
-                "type": "error",
-                "message": "Message limit reached",
-                "limit_reached": True
-            }) + "\n"
-            yield json.dumps({"type": "done"}) + "\n"
-        
-        return StreamingResponse(
-            limit_response(),
-            media_type="text/plain",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*"
-            }
-        )
+    #     return StreamingResponse(
+    #         limit_response(),
+    #         media_type="text/plain",
+    #         headers={
+    #             "Cache-Control": "no-cache",
+    #             "X-Accel-Buffering": "no",
+    #             "Access-Control-Allow-Origin": "*",
+    #             "Access-Control-Allow-Methods": "POST, OPTIONS",
+    #             "Access-Control-Allow-Headers": "*"
+    #         }
+    #     )
     
     # ===== ROUTE TO CELERY OR DIRECT =====
     use_celery = message.deep_search or message.lab_mode
     
-    print(f"IS LAB -> {message.lab_mode}")
-    print(f"IS DEEP SEARCH -> {message.deep_search}")
-    print(f"USE CELERY -> {use_celery}")
-    
     if use_celery:
-        print("🚀 Routing to CELERY")
         return StreamingResponse(
             stream_response_celery(newConversation, message, conversation_id, conv, files, db),
             media_type="text/plain",
@@ -1401,7 +1040,6 @@ async def send_chat_message_stream(
             }
         )
     else:
-        print("⚡ Routing to DIRECT")
         return StreamingResponse(
             stream_response_direct(newConversation, message, conversation_id, conv, files, db),
             media_type="text/plain",
@@ -1415,7 +1053,6 @@ async def send_chat_message_stream(
             }
         )
 
-
 async def stream_response_direct(
     newConversation: bool,
     message: MessageSend,
@@ -1424,10 +1061,6 @@ async def stream_response_direct(
     uploaded_files: List[UploadFile],
     db: Session
 ):
-    """
-    Direct LLM streaming for normal/simple searches
-    No Celery - immediate response with streaming
-    """
     
     finalSources = []
     extracted_assets = []
@@ -1436,15 +1069,12 @@ async def stream_response_direct(
     full_response = ""
     app = None
     transformed_query = ""
-    
  
     try:
         is_lab_mode = message.lab_mode
         is_deep_search = message.deep_search
         
-        # ===== PROCESS UPLOADED FILES =====
         if uploaded_files and len(uploaded_files) > 0:
-            logger.info(f"[FILES] Processing {len(uploaded_files)} uploaded files")
             
             yield json.dumps({
                 "type": "reasoning",
@@ -1459,9 +1089,6 @@ async def stream_response_direct(
                     content_bytes = await file.read()
                     file_size_kb = len(content_bytes) / 1024
                     
-                    logger.info(f"[FILES] Processing file {idx}: {file.filename} ({file_size_kb:.1f} KB)")
-                    
-                    # Process based on file type
                     if file.content_type == "application/pdf":
                         import pdfplumber
                         from io import BytesIO
@@ -1480,7 +1107,6 @@ async def stream_response_direct(
                                 "pages": len(pdf.pages),
                                 "content": text_content[:10000]
                             })
-                            logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from PDF")
                         except Exception as e:
                             logger.error(f"[FILES] PDF extraction error: {e}")
                             file_contents.append({
@@ -1516,7 +1142,6 @@ async def stream_response_direct(
                                 "content": summary[:10000]
                             })
                             
-                            logger.info(f"[FILES] ✓ Processed tabular data")
                         except Exception as e:
                             logger.error(f"[FILES] Pandas error: {e}")
                             file_contents.append({
@@ -1569,7 +1194,6 @@ async def stream_response_direct(
                         "timestamp": datetime.now(timezone.utc).isoformat()
                     }) + "\n"
         
-        # ===== SEND METADATA =====
         metadata = json.dumps({
             "type": "metadata",
             "conversation_id": conversation_id,
@@ -1580,21 +1204,17 @@ async def stream_response_direct(
         }) + "\n"
         yield metadata
         
-        # ===== GET CONVERSATION HISTORY =====
         db_messages = db.query(Message).filter(
             Message.conversation_id == uuid.UUID(conversation_id)
         ).order_by(Message.created_at).all()
         
         messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
         
-        # Track reasoning steps
         reasoning_steps = []
         
-        # ===== NORMAL SEARCH MODE (Direct LLM) =====
         from simple_search import simple_search_chat_agent
         user_prompt = message.content
         
-        # Add file contents to prompt if present
         if file_contents:
             user_prompt += "\n\n=== UPLOADED FILES ===\n"
             for file_info in file_contents:
@@ -1635,13 +1255,9 @@ async def stream_response_direct(
                     yield json.dumps(step) + "\n" 
                     reasoning_steps.append(step)
                     finalSources.append(urls)
-                    
+
             except Exception as e:
                 print(f"Exception while yielding -> {e}")
-        
-        # ===== SAVE TO DATABASE =====
-        
-        # Save user message
         user_msg = Message(
             conversation_id=uuid.UUID(conversation_id),
             role="user",
@@ -1656,7 +1272,6 @@ async def stream_response_direct(
         db.add(user_msg) 
         print(f"SAVED USER MSG, CONV ID -> {conversation_id}") 
         
-        # Save assistant message
         assistant_msg = Message(
             conversation_id=uuid.UUID(conversation_id),
             role="assistant",
@@ -1670,22 +1285,16 @@ async def stream_response_direct(
         )
         db.add(assistant_msg)
         
-        print("SAVED ASSISTANT MSG")
-        
-        # Update conversation metadata
         conv.updated_at = datetime.now(timezone.utc)
         conv.message_count = (conv.message_count or 0) + 2
         if conv.title == "New Conversation":
             conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
-            print("CHANGED CONV TITLE")
         
         db.commit() 
         
-        # Clear cache
         if conversation_manager.redis:
             await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
         
-        # Send done signal
         yield json.dumps({"type": "done"}) + "\n"
         
     except Exception as e:
@@ -1697,10 +1306,6 @@ async def stream_response_direct(
         yield json.dumps({"type": "done"}) + "\n"
 
 async def process_uploaded_files(uploaded_files: List[UploadFile]) -> list:
-    """
-    Extract text content from uploaded files
-    Returns list of dicts with filename, type, content
-    """
     file_contents = []
     
     for file in uploaded_files:
@@ -1752,218 +1357,7 @@ async def process_uploaded_files(uploaded_files: List[UploadFile]) -> list:
             })
     
     return file_contents
-
-# ============================================================================
-# CELERY STREAMING FUNCTION (NEW)
-# ============================================================================
-
-# async def stream_response_celery(
-#     newConversation: bool,
-#     message: MessageSend,
-#     conversation_id: str,
-#     conv: Conversation,
-#     uploaded_files: List[UploadFile],
-#     db: Session
-# ):
-#     """
-#     Stream response from Celery worker via Redis pub/sub
-#     Only yields reasoning steps - final result saved to DB
-#     """
-    
-#     try:
-#         # Process uploaded files
-#         file_contents = []
-#         if uploaded_files and len(uploaded_files) > 0:
-#             yield json.dumps({
-#                 "type": "reasoning",
-#                 "step": "File Processing",
-#                 "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
-#                 "timestamp": datetime.now(timezone.utc).isoformat()
-#             }) + "\n"
-            
-#             # Use your existing file processing code
-#             file_contents = await process_uploaded_files(uploaded_files)
-        
-#         # Send metadata
-#         yield json.dumps({
-#             "type": "metadata",
-#             "conversation_id": conversation_id,
-#             "is_anonymous": conv.is_anonymous,
-#             "deep_search": message.deep_search,
-#             "lab_mode": message.lab_mode,
-#             "files_processed": len(file_contents)
-#         }) + "\n"
-        
-#         # Save user message
-#         user_msg = Message(
-#             conversation_id=uuid.UUID(conversation_id),
-#             role="user",
-#             content=message.content,
-#             has_file=len(file_contents) > 0,
-#             file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
-#         )
-#         db.add(user_msg)
-#         db.commit()
-        
-#         # Generate job ID and dispatch Celery task
-#         job_id = str(uuid.uuid4())
-        
-#         # Get conversation history
-#         db_messages = db.query(Message).filter(
-#             Message.conversation_id == uuid.UUID(conversation_id)
-#         ).order_by(Message.created_at).all()
-#         messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
-        
-#         # Dispatch task
-#         from tasks import deep_search_task
-#         task = deep_search_task.apply_async(
-#             args=[
-#                 job_id,
-#                 conversation_id,
-#                 message.content,
-#                 messages_list,
-#                 file_contents,
-#                 message.lab_mode
-#             ],
-#             task_id=f"search-{job_id}",
-#             queue='llm_worker_queue' 
-#         )
-        
-#         print(f"🚀 Dispatched Celery task: {task.id} for job: {job_id}")
-        
-#         # Subscribe to Redis and poll for updates
-#         from redis_client import get_pubsub
-#         pubsub = get_pubsub()
-#         channel = f"job:{job_id}"
-#         pubsub.subscribe(channel)
-        
-#         print(f"🎧 Subscribed to Redis channel: {channel}")
-        
-#         # Poll with timeout
-#         timeout_seconds = 30 * 60  # 30 minutes
-#         start_time = time.time()
-#         final_result = None
-        
-#         while True:
-#             # Check timeout
-#             if time.time() - start_time > timeout_seconds:
-#                 print(f"⏰ Timeout exceeded for job {job_id}")
-                
-#                 # Revoke Celery task
-#                 from celery_app import celery_app
-#                 celery_app.control.revoke(task.id, terminate=True)
-                
-#                 # Save error message
-#                 error_msg = Message(
-#                     conversation_id=uuid.UUID(conversation_id),
-#                     role="assistant",
-#                     content="We're sorry, but your request took too long to process. Please try again with a simpler query.",
-#                     celery_task_id=task.id
-#                 )
-#                 db.add(error_msg)
-                
-#                 # Update conversation
-#                 conv.updated_at = datetime.now(timezone.utc)
-#                 conv.message_count = (conv.message_count or 0) + 2
-#                 if conv.title == "New Conversation":
-#                     conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
-#                 db.commit()
-                
-#                 # Yield error
-#                 yield json.dumps({
-#                     "type": "error",
-#                     "message": "Request timeout - please try again"
-#                 }) + "\n"
-                
-#                 yield json.dumps({"type": "done"}) + "\n"
-#                 break
-            
-#             # Get message from Redis
-#             msg = pubsub.get_message(ignore_subscribe_messages=True)
-            
-#             if msg and msg["type"] == "message":
-#                 data_str = msg["data"]
-#                 data = json.loads(data_str)
-                
-#                 msg_type = data.get("type")
-                
-#                 if msg_type == "reasoning":
-#                     # Yield reasoning to client (streaming)
-#                     yield data_str + "\n"
-                
-#                 elif msg_type == "complete":
-#                     # Don't yield - save to DB instead
-#                     final_result = data
-#                     print(f"✅ Received complete result from worker")
-                    
-#                     # Save assistant message
-#                     assistant_msg = Message(
-#                         conversation_id=uuid.UUID(conversation_id),
-#                         role="assistant",
-#                         content=final_result.get("content", ""),
-#                         sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
-#                         reasoning_steps=json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None,
-#                         assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
-#                         app=final_result.get("app"),
-#                         lab_mode=final_result.get("lab_mode", False),
-#                         celery_task_id=task.id
-#                     )
-#                     db.add(assistant_msg)
-                    
-#                     # Update conversation
-#                     conv.updated_at = datetime.now(timezone.utc)
-#                     conv.message_count = (conv.message_count or 0) + 2
-#                     if conv.title == "New Conversation":
-#                         conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
-                    
-#                     db.commit()
-                    
-#                     # Clear cache
-#                     if conversation_manager.redis:
-#                         await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
-                    
-#                     # Yield done signal
-#                     yield json.dumps({"type": "done"}) + "\n"
-#                     break
-                
-#                 elif msg_type == "error":
-#                     # Save error message
-#                     error_msg = Message(
-#                         conversation_id=uuid.UUID(conversation_id),
-#                         role="assistant",
-#                         content=data.get("message", "An error occurred"),
-#                         celery_task_id=task.id
-#                     )
-#                     db.add(error_msg)
-                    
-#                     # Update conversation
-#                     conv.updated_at = datetime.now(timezone.utc)
-#                     conv.message_count = (conv.message_count or 0) + 2
-#                     if conv.title == "New Conversation":
-#                         conv.title = message.content[:50] + ("..." if len(message.content) > 50 else "")
-                    
-#                     db.commit()
-                    
-#                     # Yield error
-#                     yield data_str + "\n"
-#                     yield json.dumps({"type": "done"}) + "\n"
-#                     break
-            
-#             # Small delay to prevent CPU spinning
-#             await asyncio.sleep(0.01)
-        
-#         # Cleanup
-#         pubsub.unsubscribe(channel)
-#         pubsub.close()
-        
-#     except Exception as e:
-#         logger.error(f"Celery stream error: {e}", exc_info=True)
-#         yield json.dumps({
-#             "type": "error",
-#             "message": "An unexpected error occurred"
-#         }) + "\n"
-#         yield json.dumps({"type": "done"}) + "\n"
-   
+ 
 async def stream_response_celery(
     newConversation: bool,
     message: MessageSend,
@@ -1972,11 +1366,6 @@ async def stream_response_celery(
     uploaded_files: List[UploadFile],
     db: Session
 ):
-    """
-    Stream response from Celery worker via Redis pub/sub
-    Creates placeholder assistant message and updates incrementally
-    """
-    
     assistant_msg_id = None
     reasoning_step_counter = 0
     
@@ -2041,17 +1430,11 @@ async def stream_response_celery(
             queue='llm_worker_queue' 
         )
         
-        print(f"🚀 Dispatched Celery task: {task.id} for job: {job_id}")
-        
-        # Subscribe to Redis and poll for updates
         from redis_client import get_pubsub
         pubsub = get_pubsub()
         channel = f"job:{job_id}"
         pubsub.subscribe(channel)
         
-        print(f"🎧 Subscribed to Redis channel: {channel}")
-        
-        # Poll with timeout
         timeout_seconds = 30 * 60  # 30 minutes
         start_time = time.time()
         final_result = None
@@ -2059,13 +1442,9 @@ async def stream_response_celery(
         while True:
             # Check timeout
             if time.time() - start_time > timeout_seconds:
-                print(f"⏰ Timeout exceeded for job {job_id}")
-                
-                # Revoke Celery task
                 from celery_app import celery_app
                 celery_app.control.revoke(task.id, terminate=True)
                 
-                # Mark assistant message as failed (if exists)
                 if assistant_msg_id:
                     assistant_msg = db.query(Message).filter(
                         Message.id == assistant_msg_id
@@ -2075,7 +1454,6 @@ async def stream_response_celery(
                         assistant_msg.content = "We're sorry, but your request took too long to process. Please try again with a simpler query."
                         db.commit()
                 else:
-                    # Create failed message if placeholder wasn't created yet
                     error_msg = Message(
                         conversation_id=uuid.UUID(conversation_id),
                         role="assistant",
@@ -2132,8 +1510,6 @@ async def stream_response_celery(
                         assistant_msg_id = assistant_msg.id
                         print(f"✅ Created assistant message placeholder: {assistant_msg_id}")
                     
-                    # 3. SAVE REASONING STEP to separate table (if using ReasoningStep model)
-                    # If you have ReasoningStep model:
                     try:
                         reasoning_step = ReasoningStep(
                             message_id=assistant_msg_id,
@@ -2147,16 +1523,13 @@ async def stream_response_celery(
                         db.add(reasoning_step)
                         db.commit()
                         reasoning_step_counter += 1
-                        print(f"✅ Saved reasoning step {reasoning_step_counter} for message {assistant_msg_id}")
                     except Exception as e:
                         print(f"⚠️ Could not save reasoning step: {e}")
                         # Continue even if reasoning step fails
                 
                 elif msg_type == "content":
-                    # Yield content to client
                     yield data_str + "\n"
                     
-                    # Create placeholder if doesn't exist (in case content comes before reasoning)
                     if assistant_msg_id is None:
                         assistant_msg = Message(
                             conversation_id=uuid.UUID(conversation_id),
@@ -2172,7 +1545,6 @@ async def stream_response_celery(
                         assistant_msg_id = assistant_msg.id
                         print(f"✅ Created assistant message placeholder: {assistant_msg_id}")
                     else:
-                        # Update content incrementally
                         assistant_msg = db.query(Message).filter(
                             Message.id == assistant_msg_id
                         ).first()
@@ -2181,12 +1553,10 @@ async def stream_response_celery(
                             db.commit()
                 
                 elif msg_type == "complete":
-                    # Final result - update existing message
                     final_result = data
                     print(f"✅ Received complete result from worker")
                     
                     if assistant_msg_id:
-                        # Update existing placeholder message
                         assistant_msg = db.query(Message).filter(
                             Message.id == assistant_msg_id
                         ).first()
@@ -2200,9 +1570,7 @@ async def stream_response_celery(
                             assistant_msg.lab_mode = final_result.get("lab_mode", False)
                             assistant_msg.status = "complete"
                             db.commit()
-                            print(f"✅ Updated assistant message {assistant_msg_id} to complete")
                     else:
-                        # Fallback: create message if somehow placeholder wasn't created
                         assistant_msg = Message(
                             conversation_id=uuid.UUID(conversation_id),
                             role="assistant",
@@ -2218,9 +1586,7 @@ async def stream_response_celery(
                         )
                         db.add(assistant_msg)
                         db.commit()
-                        print(f"⚠️ Created assistant message in complete handler (fallback)")
                     
-                    # Update conversation
                     conv.updated_at = datetime.now(timezone.utc)
                     conv.message_count = (conv.message_count or 0) + 2
                     if conv.title == "New Conversation":
@@ -2304,6 +1670,167 @@ async def stream_response_celery(
             "message": "An unexpected error occurred"
         }) + "\n"
         yield json.dumps({"type": "done"}) + "\n"
+
+
+# Add to your database functions or services
+
+from datetime import date
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+import razorpay
+import os
+
+# Initialize Razorpay
+razorpay_client = razorpay.Client(
+    auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
+)
+
+# Payment packages
+PAYMENT_PACKAGES = {
+    "starter": {
+        "name": "Starter Pack",
+        "credits": 200,
+        "price": 4.99,
+        "currency": "USD",
+        "description": "200 messages"
+    },
+    "popular": {
+        "name": "Popular Pack",
+        "credits": 500,
+        "price": 9.99,
+        "currency": "USD",
+        "description": "500 messages",
+        "badge": "Most Popular"
+    },
+    "pro": {
+        "name": "Pro Pack",
+        "credits": 1200,
+        "price": 19.99,
+        "currency": "USD",
+        "description": "1200 messages",
+        "badge": "Best Deal"
+    }
+}
+
+ANONYMOUS_DAILY_LIMIT = 1  # 2 free messages per day
+LOGGED_IN_DAILY_LIMIT = 2
+
+async def check_user_daily_limit(db: Session, user_id: str) -> tuple[bool, int]:
+    """
+    Check if user has exceeded daily limit.
+    Returns: (is_allowed, remaining_messages)
+    """
+    today = date.today()
+    
+    # Get or create usage record for today
+    usage = db.query(UserDailyUsage).filter(
+        UserDailyUsage.user_id == user_id,
+        UserDailyUsage.usage_date == today
+    ).first()
+    
+    if not usage:
+        # First message today
+        return True, LOGGED_IN_DAILY_LIMIT
+    
+    remaining = LOGGED_IN_DAILY_LIMIT - usage.message_count
+    is_allowed = usage.message_count < LOGGED_IN_DAILY_LIMIT
+    
+    return is_allowed, max(0, remaining)
+
+
+async def increment_user_daily_usage(db: Session, user_id: str):
+    """
+    Increment message count for user.
+    """
+    today = date.today()
+    
+    usage = db.query(UserDailyUsage).filter(
+        UserDailyUsage.user_id == user_id,
+        UserDailyUsage.usage_date == today
+    ).first()
+    
+    if usage:
+        usage.message_count += 1
+        usage.updated_at = datetime.utcnow()
+    else:
+        usage = UserDailyUsage(
+            user_id=user_id,
+            usage_date=today,
+            message_count=1
+        )
+        db.add(usage)
+    
+    db.commit()
+    
+async def check_anonymous_limit(db: Session, ip_address: str) -> tuple[bool, int]:
+    """
+    Check if anonymous user has exceeded daily limit.
+    Returns: (is_allowed, remaining_messages)
+    """
+    today = date.today()
+    
+    # Get or create usage record for today
+    usage = db.query(AnonymousUsage).filter(
+        AnonymousUsage.ip_address == ip_address,
+        AnonymousUsage.usage_date == today
+    ).first()
+    
+    if not usage:
+        # First message today
+        return True, ANONYMOUS_DAILY_LIMIT
+    
+    remaining = ANONYMOUS_DAILY_LIMIT - usage.message_count
+    is_allowed = usage.message_count < ANONYMOUS_DAILY_LIMIT
+    
+    return is_allowed, max(0, remaining)
+
+
+async def increment_anonymous_usage(db: Session, ip_address: str):
+    """
+    Increment message count for anonymous user.
+    """
+    today = date.today()
+    
+    usage = db.query(AnonymousUsage).filter(
+        AnonymousUsage.ip_address == ip_address,
+        AnonymousUsage.usage_date == today
+    ).first()
+    
+    if usage:
+        usage.message_count += 1
+        usage.updated_at = datetime.utcnow()
+    else:
+        usage = AnonymousUsage(
+            ip_address=ip_address,
+            usage_date=today,
+            message_count=1
+        )
+        db.add(usage)
+    
+    db.commit()
+
+from fastapi import Request
+def get_client_ip(request: Request) -> str:
+    """
+    Get the real client IP address, handling proxies and load balancers.
+    """
+    # Check for forwarded IP (if behind proxy/load balancer)
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        # X-Forwarded-For can contain multiple IPs, take the first one
+        return forwarded.split(",")[0].strip()
+    
+    # Check for real IP header
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    
+    # Fallback to direct client IP
+    if request.client:
+        return request.client.host
+    
+    return "unknown"
         
 @app.options("/auth/register")
 async def register_options(request: Request):
@@ -2361,35 +1888,7 @@ async def register(
             "Access-Control-Allow-Credentials": "true",
         }
     )
-    
-# @app.post("/auth/register")
-# async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-#     existing = db.query(User).filter(
-#         (User.username == user_data.username) | (User.email == user_data.email)
-#     ).first()
-    
-#     if existing:
-#         raise HTTPException(status_code=400, detail="Username or email already exists")
-    
-#     hashed_password = pwd_context.hash(user_data.password)
-#     user = User(
-#         username=user_data.username,
-#         email=user_data.email,
-#         hashed_password=hashed_password
-#     )
-#     db.add(user)
-#     db.commit()
-#     db.refresh(user)
-    
-#     token = create_access_token({"user_id": str(user.id), "username": user.username})
-    
-#     return {
-#         "access_token": token,
-#         "token_type": "bearer",
-#         "user_id": str(user.id),
-#         "username": user.username
-#     }
-
+     
 @app.post("/auth/login")
 async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == user_data.email).first()
@@ -2413,7 +1912,6 @@ async def create_conversation(
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user)
 ):
-    print("IN 1")
     conversation = Conversation(
         user_id=uuid.UUID(current_user["user_id"]) if current_user else None,
         title=conv_data.title,
@@ -2436,14 +1934,11 @@ async def list_conversations(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_token)
 ):
-    print(" IN 2 " + str(current_user))
-    
     conversations = db.query(Conversation).filter(
         # Conversation.user_id == current_user["user_id"]
         Conversation.user_id == uuid.UUID(current_user["user_id"])
     ).order_by(Conversation.updated_at.desc()).all()
     
-    print(str(len(conversations)))
     return [
         ConversationResponse(
             id=str(conv.id),
@@ -2454,38 +1949,6 @@ async def list_conversations(
         )
         for conv in conversations
     ]
- 
-# @app.get("/conversations/{conversation_id}/messages")
-# async def get_messages(
-#     conversation_id: str,
-#     db: Session = Depends(get_db),
-#     current_user: Optional[dict] = Depends(get_current_user)
-# ):
-#     conv = db.query(Conversation).filter(Conversation.id == uuid.UUID(conversation_id)).first()
-    
-#     if not conv:
-#         raise HTTPException(status_code=404, detail="Conversation not found")
-    
-#     if current_user and conv.user_id and str(conv.user_id) != current_user["user_id"]:
-#         raise HTTPException(status_code=403, detail="Not authorized")
-    
-#     messages = db.query(Message).filter(
-#         Message.conversation_id == uuid.UUID(conversation_id)
-#     ).order_by(Message.created_at).all()
-    
-#     return [{
-#         "id": str(m.id),
-#         "role": m.role,
-#         "content": m.content,
-#         "has_file": m.has_file,
-#         "created_at": m.created_at.isoformat(),
-#         "sources": json.loads(m.sources) if m.sources else None,
-#         "reasoning_steps": json.loads(m.reasoning_steps) if m.reasoning_steps else None,
-#         "assets": json.loads(m.assets) if m.assets else None,  # NEW,
-#         "app":  m.app,
-#         "lab_mode": m.lab_mode,  # NEW
-#         "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
-#     } for m in messages]
 
 @app.get("/conversations/{conversation_id}/messages")
 async def get_messages(
@@ -2588,6 +2051,7 @@ async def health_check():
             "web_search": bool(SERPAPI_KEY)
         }
     }
+
 @app.get("/messages/{message_id}/export/{format}")
 async def export_message(
     message_id: str,
@@ -2660,11 +2124,6 @@ logging.getLogger('websockets').setLevel(logging.WARNING)
 logging.getLogger('websockets.client').setLevel(logging.WARNING)
 logging.getLogger('websockets.server').setLevel(logging.WARNING)
  
-# ============================================================
-# COMPLETE VOICE WEBSOCKET IMPLEMENTATION
-# Add this entire section to your FastAPI app (chat_system.py)
-# ============================================================
-
 from fastapi import WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
 import asyncio
@@ -2675,19 +2134,9 @@ import websockets
 from datetime import datetime
 import uuid
 
-# # Import your database and models - UPDATE THESE
-# from your_database_file import get_db  # Your database session dependency
-# from your_models_file import Message, Conversation  # Your SQLAlchemy models
-# from your_auth_file import get_current_user_optional  # Your auth function (optional)
-
-# Import your scraper
-# from your_scraper_file import search_with_web
-
-# Disable websockets debug logging
 logging.getLogger('websockets').setLevel(logging.WARNING)
 logging.getLogger('websockets.client').setLevel(logging.WARNING)
 logging.getLogger('websockets.server').setLevel(logging.WARNING)
-
 
 class RealtimeVoiceHandler:
     def __init__(self, db: Session = None, user_id: str = None):
@@ -2956,8 +2405,6 @@ Instructions: Use the above scraped content to answer the user's question. Be sp
             self.db.rollback()
     
     async def handle_client_messages(self):
-        """Listen for messages from browser client and relay to OpenAI"""
-        print("[VOICE] Client message handler started")
         try:
             while True:
                 message = await self.client_ws.receive_text()
@@ -2966,7 +2413,6 @@ Instructions: Use the above scraped content to answer the user's question. Be sp
                 
                 # When user starts speaking, cancel any ongoing response
                 if msg_type == "input_audio_buffer.speech_started":
-                    print("[VOICE] User started speaking - canceling response")
                     cancel_msg = {"type": "response.cancel"}
                     await self.openai_ws.send(json.dumps(cancel_msg))
                 
@@ -2986,21 +2432,16 @@ Instructions: Use the above scraped content to answer the user's question. Be sp
             traceback.print_exc()
         
     async def connect_to_openai(self):
-        """Establish WebSocket connection to OpenAI Realtime API"""
         url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
         headers = {
             "Authorization": f"",
             "OpenAI-Beta": "realtime=v1"
         }
         
-        print("[VOICE] Connecting to OpenAI Realtime API...")
         self.openai_ws = await websockets.connect(url, extra_headers=headers)
-        print("[VOICE] ✅ Connected to OpenAI")
         await self.send_session_update()
-        print("[VOICE] ✅ Session configured")
         
     async def send_session_update(self):
-        """Configure the Realtime API session"""
         session_config = {
             "type": "session.update",
             "session": {
@@ -3053,15 +2494,12 @@ Instructions: Use the above scraped content to answer the user's question. Be sp
         await self.openai_ws.send(json.dumps(session_config))
         
     async def handle_function_call(self, function_name, arguments, call_id):
-        """Execute function calls from the AI"""
         if function_name == "search_web":
             query = arguments.get("query", "")
             from scraper_stable_optimized import search_with_web
             try:
-                # Call your existing scraper
                 full_text, urls, tables = await search_with_web(query)
                 
-                # Send visual data (tables/charts) ONLY to client for display
                 if self.client_ws:
                     await self.client_ws.send_json({
                         "type": "search_results",
@@ -3270,10 +2708,6 @@ Instructions: Use the above scraped content to answer the user's question. Be sp
             traceback.print_exc()
 
 
-# ============================================================
-# WEBSOCKET ENDPOINT
-# ============================================================
-
 @app.websocket("/ws/voice")
 async def voice_websocket(websocket: WebSocket, db: Session = Depends(get_db)):
     """
@@ -3338,11 +2772,6 @@ async def voice_websocket(websocket: WebSocket, db: Session = Depends(get_db)):
             await handler.openai_ws.close()
         print("[VOICE] Connection closed")
 
-
-# ============================================================
-# OPTIONAL: Health check endpoint
-# ============================================================
-
 @app.get("/voice/health")
 async def voice_health():
     """Check if voice service is available"""
@@ -3351,12 +2780,7 @@ async def voice_health():
         "service": "voice",
         "openai_api_key_set": bool(os.getenv("OPENAI_API_KEY"))
     }
- 
-
-# with open('google_auth_secret.json', 'r') as f:
-#     secret = f.read()  
-
-    
+     
 @app.get("/debug/config")
 async def debug_config():
     """Remove this endpoint in production!"""
@@ -3376,10 +2800,6 @@ from jose import jwt
 from datetime import datetime, timedelta
 import uuid
 
-
-# ============================================
-# Step 1: Initiate OAuth
-# ============================================
 @app.get("/auth/login")
 async def google_login():
     """Redirect to Google OAuth"""
@@ -3393,11 +2813,7 @@ async def google_login():
     )
     
     return RedirectResponse(url=google_auth_url)
-
-# ============================================
-# Step 2: Handle OAuth Callback (GET, not POST!)
-# ============================================
- 
+  
 @app.get("/auth/callback")
 async def google_callback(code: str, db: Session = Depends(get_db)):
     """Handle Google OAuth callback"""
@@ -3405,9 +2821,6 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         if not code:
             return RedirectResponse(url=f"{FRONTEND_URL}?error=no_code", status_code=302)
         
-        print(f"📥 Received OAuth code")
-        
-        # Exchange code for token
         token_url = "https://oauth2.googleapis.com/token"
         token_data = {
             "code": code,
@@ -3497,29 +2910,16 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         traceback.print_exc()
         return RedirectResponse(url=f"{FRONTEND_URL}?error=auth_failed", status_code=302)
     
-# ============================================
-# Step 3: Get Current User Info
-# ============================================
 @app.get("/me")
 async def get_me(request: Request):
     """Get current user info from session cookie"""
     token = request.cookies.get("session")
     
-    print("=" * 60)
-    print("🔍 /me endpoint called")
-    print("=" * 60)
-    print(f"Cookie present: {token is not None}")
-    print(f"All cookies: {request.cookies}")
-    
     if not token:
-        print("❌ No session cookie found")
         raise HTTPException(status_code=401, detail="Not logged in")
     
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        
-        print(f"✅ Token decoded successfully")
-        print(f"Payload: {payload}")
         
         return {
             "user_id": payload.get("user_id"),
@@ -3531,44 +2931,24 @@ async def get_me(request: Request):
     except Exception as e:
         print(f"❌ Token decode error: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
-    
-    """Get current user info from session cookie"""
-    token = request.cookies.get("session")
-    
-    if not token:
-        raise HTTPException(status_code=401, detail="Not logged in")
-    
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return {
-            "email": payload["email"],
-            "name": payload.get("name"),
-            "username": payload.get("username"),
-            "pic": payload.get("pic"),
-            "user_id": payload.get("user_id")
-        }
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+# class NewsArticle(BaseModel):
+#     title: str
+#     description: Optional[str] = None
+#     link: str
+#     pubDate: str
+#     thumbnail: Optional[str] = None
+#     source: str
+#     author: Optional[str] = None
 
-
-class NewsArticle(BaseModel):
-    title: str
-    description: Optional[str] = None
-    link: str
-    pubDate: str
-    thumbnail: Optional[str] = None
-    source: str
-    author: Optional[str] = None
-
-class NewsResponse(BaseModel):
-    status: str
-    category: str
-    country: str
-    articles: List[NewsArticle]
-    cached_at: str
-    next_update: str
-    total_results: int
+# class NewsResponse(BaseModel):
+#     status: str
+#     category: str
+#     country: str
+#     articles: List[NewsArticle]
+#     cached_at: str
+#     next_update: str
+#     total_results: int
 
 # Cache storage
 news_cache: Dict[str, Dict] = {}
@@ -3632,7 +3012,6 @@ CATEGORY_MAP = {
     "politics": "politics"
 }
 
-
 async def detect_user_country(ip_address: str = None) -> str:
     """Detect user's country from IP address"""
     try:
@@ -3647,7 +3026,6 @@ async def detect_user_country(ip_address: str = None) -> str:
                 data = response.json()
                 country_code = data.get("country_code", "US")
                 country_name = data.get("country_name", "Unknown")
-                # logger.info(f"📍 Detected country: {country_code} ({country_name})")
                 
                 return country_code
             else:
@@ -3655,20 +3033,14 @@ async def detect_user_country(ip_address: str = None) -> str:
     except Exception as e:
         logger.warning(f"⚠️ Could not detect country from IP: {e}")
     
-    # logger.info("📍 Defaulting to US")
     return "US"
-
 
 async def fetch_news_from_newsdata(
     category: str = "general",
     country: str = "US",
     query: Optional[str] = None
 ) -> tuple[List[Dict], int]:
-    """
-    Fetch news from NewsData.io API
-    
-    Returns: (articles, total_results)
-    """
+ 
     try:
         if NEWSAPI_KEY == "YOUR_API_KEY_HERE":
             logger.error("❌ NewsData.io API key not set! Get one from https://newsdata.io")
@@ -3677,13 +3049,10 @@ async def fetch_news_from_newsdata(
         all_articles = []
         base_url = "https://newsdata.io/api/1/news"
         
-        # Map category to NewsData.io format
         newsdata_category = CATEGORY_MAP.get(category, "top")
         
-        # Get country code for NewsData.io
         country_code = SUPPORTED_COUNTRIES.get(country.upper(), "us")
         
-        # Get language for this country
         language = COUNTRY_LANGUAGES.get(country.upper(), "en")
         
         # Build parameters
@@ -3697,8 +3066,6 @@ async def fetch_news_from_newsdata(
         # Add search query if provided
         if query:
             params["q"] = query
-        
-        # logger.info(f"📡 Fetching from NewsData.io: country={country_code}, category={newsdata_category}, language={language}")
         
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(base_url, params=params)
@@ -3766,7 +3133,6 @@ def get_cache_key(category: str, country: str, query: Optional[str] = None) -> s
         return f"SEARCH_{query}_{country}".upper()
     return f"{category}_{country}".upper()
 
-
 def is_cache_valid(cache_key: str) -> bool:
     """Check if cache is still valid"""
     if cache_key not in news_cache:
@@ -3808,8 +3174,6 @@ async def background_cache_updater():
     
     while True:
         try:
-            # logger.info("🔄 Starting cache update cycle...")
-            
             tasks = []
             for category in categories:
                 for country in countries:
@@ -3817,14 +3181,10 @@ async def background_cache_updater():
             
             await asyncio.gather(*tasks, return_exceptions=True)
             
-            # logger.info(f"✅ Cache update cycle complete. Next update in {CACHE_DURATION}s")
-            # logger.info(f"📊 Cached {len(categories)} categories × {len(countries)} countries")
-            
         except Exception as e:
             logger.error(f"❌ Error in background cache updater: {str(e)}")
         
         await asyncio.sleep(CACHE_DURATION)
-
 
 @app.on_event("startup")
 async def startup_event():
@@ -3834,8 +3194,6 @@ async def startup_event():
     if not background_task_running:
         background_task_running = True
         asyncio.create_task(background_cache_updater())
-        # logger.info("🚀 Background cache updater started")
-
  
 @app.get("/news", response_model=NewsResponse)
 async def get_news(
@@ -3844,7 +3202,6 @@ async def get_news(
     q: Optional[str] = None,
     auto_detect: bool = True
 ):
-    """Fetch news articles from NewsData.io"""
     try:
         if not country and auto_detect:
             country = await detect_user_country()
@@ -3896,7 +3253,6 @@ async def get_news(
     except Exception as e:
         logger.error(f"❌ Error in get_news: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/detect-country")
 async def detect_country():
@@ -4065,9 +3421,363 @@ async def verify_magic_link(
     
     return RedirectResponse(url=redirect_url)
 
+from use_cases_schema import *
+@app.get("/use_cases")
+async def get_all_use_cases(
+    category: Optional[str] = None,
+    featured: Optional[bool] = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        query = db.query(PublicUseCase)
+        
+        # Apply filters
+        if category:
+            query = query.filter(PublicUseCase.category == category)
+        
+        if featured is not None:
+            query = query.filter(PublicUseCase.featured == featured)
+        
+        # Order by featured first, then by views, then by created date
+        query = query.order_by(
+            PublicUseCase.featured.desc(),
+            PublicUseCase.view_count.desc(),
+            PublicUseCase.created_at.desc()
+        )
+        
+        use_cases = query.all()
+        
+        return {
+            "status": "success",
+            "count": len(use_cases),
+            "use_cases": [uc.to_dict() for uc in use_cases]
+        }
+        
+    except Exception as e:
+        print(f"❌ Error fetching use cases: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/use_cases/{use_case_id}/messages")
+async def get_use_case_messages(
+    use_case_id: str,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get the use case
+        use_case = db.query(PublicUseCase).filter(
+            PublicUseCase.id == use_case_id
+        ).first()
+        
+        if not use_case:
+            raise HTTPException(status_code=404, detail="Use case not found")
+        
+        # Get messages (already ordered by 'order' field via relationship)
+        messages = use_case.messages
+        
+        return {
+            "status": "success",
+            "use_case": use_case.to_dict(),
+            "messages": [msg.to_dict() for msg in messages]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching use case messages: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/use_cases/{use_case_id}/increment-views")
+async def increment_use_case_views(
+    use_case_id: str,
+    db: Session = Depends(get_db)
+):
+    try:
+        use_case = db.query(PublicUseCase).filter(
+            PublicUseCase.id == use_case_id
+        ).first()
+        
+        if not use_case:
+            raise HTTPException(status_code=404, detail="Use case not found")
+        
+        # Increment view count
+        use_case.view_count += 1
+        db.commit()
+        
+        return {
+            "status": "success",
+            "use_case_id": str(use_case_id),
+            "new_view_count": use_case.view_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error incrementing views: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# GET CATEGORIES WITH COUNTS
+# ============================================
+
+@app.get("/use_cases/categories/list")
+async def get_categories_with_counts(db: Session = Depends(get_db)):
+    try:
+        from sqlalchemy import func
+        
+        # Query to count use cases per category
+        category_counts = db.query(
+            PublicUseCase.category,
+            func.count(PublicUseCase.id).label('count')
+        ).group_by(PublicUseCase.category).all()
+        
+        # Format response
+        categories = []
+        for category, count in category_counts:
+            category_info = USE_CASE_CATEGORIES.get(category, {
+                'icon': '📁',
+                'name': category.title()
+            })
+            categories.append({
+                "key": category,
+                "name": category_info['name'],
+                "icon": category_info['icon'],
+                "count": count
+            })
+        
+        # Add "All" category
+        total_count = sum(c['count'] for c in categories)
+        categories.insert(0, {
+            "key": "all",
+            "name": "All Use Cases",
+            "icon": "🌐",
+            "count": total_count
+        })
+        
+        return {
+            "status": "success",
+            "categories": categories
+        }
+        
+    except Exception as e:
+        print(f"❌ Error fetching categories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+import razorpay
+from fastapi import HTTPException
+import os
+
+# Initialize Razorpay client
+razorpay_client = razorpay.Client(
+    auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
+)
+
+
+# GET available packages
+@app.get("/payment/packages")
+async def get_payment_packages():
+    """Get available payment packages."""
+    return {
+        "packages": PAYMENT_PACKAGES,
+        "currency": "USD"
+    }
+
+
+@app.post("/payment/create-order")
+async def create_payment_order(
+    request: CreateOrderRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create Razorpay order for credit purchase."""
+    
+    # Validate package
+    if request.package not in PAYMENT_PACKAGES:
+        raise HTTPException(status_code=400, detail="Invalid package")
+    
+    pkg = PAYMENT_PACKAGES[request.package]
+    user_id = current_user.get("user_id")
+    
+    # Convert to cents
+    amount = int(pkg["price"] * 100)
+    
+    try:
+        # ✅ FIXED: Shortened receipt to under 40 characters
+        timestamp = int(datetime.utcnow().timestamp())
+        # Take only last 8 chars of user_id if it's a UUID
+        user_short = str(user_id)[-8:] if len(str(user_id)) > 8 else str(user_id)
+        receipt = f"rcpt_{user_short}_{timestamp}"
+        
+        # Create Razorpay order
+        order_data = {
+            "amount": amount,
+            "currency": pkg["currency"],
+            "receipt": receipt,  # Now guaranteed under 40 chars
+            "notes": {
+                "user_id": str(user_id),
+                "package": request.package,
+                "credits": pkg["credits"]
+            }
+        }
+        
+        razorpay_order = razorpay_client.order.create(data=order_data)
+        
+        # Save to database
+        purchase = CreditPurchase(
+            user_id=user_id,
+            razorpay_order_id=razorpay_order["id"],
+            package=request.package,
+            amount=pkg["price"],
+            credits_purchased=pkg["credits"],
+            payment_status="created",
+            receipt=receipt  # Store the receipt
+        )
+        
+        db.add(purchase)
+        db.commit()
+        db.refresh(purchase)
+        
+        return {
+            "order_id": razorpay_order["id"],
+            "amount": amount,
+            "currency": pkg["currency"],
+            "key_id": os.getenv("RAZORPAY_KEY_ID"),
+            "package": request.package,
+            "credits": pkg["credits"]
+        }
+        
+    except Exception as e:
+        print(f"Error creating order: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
+    
+    
+from razorpay.errors import SignatureVerificationError
+import hmac
+import hashlib
+
+@app.post("/payment/verify")
+async def verify_payment(
+    request: VerifyPaymentRequest,  # ✅ CHANGED: Now accepts JSON body
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Verify payment and add credits."""
+    
+    user_id = current_user.get("user_id")
+    
+    # Verify signature
+    try:
+        params_dict = {
+            'razorpay_order_id': request.razorpay_order_id,
+            'razorpay_payment_id': request.razorpay_payment_id,
+            'razorpay_signature': request.razorpay_signature
+        }
+        
+        razorpay_client.utility.verify_payment_signature(params_dict)
+        
+    except SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    # Find purchase
+    purchase = db.query(CreditPurchase).filter(
+        CreditPurchase.razorpay_order_id == request.razorpay_order_id,
+        CreditPurchase.user_id == user_id
+    ).first()
+    
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    
+    # Check if already processed
+    if purchase.payment_status == "paid":
+        return {
+            "success": True,
+            "message": "Payment already processed",
+            "credits_added": purchase.credits_purchased,
+            "total_credits": db.query(User).filter(User.id == user_id).first().message_credits
+        }
+    
+    # Update purchase
+    purchase.razorpay_payment_id = request.razorpay_payment_id
+    purchase.razorpay_signature = request.razorpay_signature
+    purchase.payment_status = "paid"
+    purchase.paid_at = datetime.utcnow()
+    
+    # Add credits to user
+    user = db.query(User).filter(User.id == user_id).first()
+    user.message_credits += purchase.credits_purchased
+    user.total_credits_purchased += purchase.credits_purchased
+    user.total_spent += purchase.amount
+    user.is_premium = True
+    user.last_purchase_date = datetime.utcnow()
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": "Payment successful!",
+        "credits_added": purchase.credits_purchased,
+        "total_credits": user.message_credits
+    }
+
+
+@app.get("/payment/packages")
+async def get_payment_packages():
+    """Get available payment packages."""
+    return {
+        "packages": PAYMENT_PACKAGES,
+        "currency": "USD"
+    }
+    
+@app.get("/user/credits")
+async def get_user_credits(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's credit balance."""
+    
+    user_id = current_user.get("user_id")
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    return {
+        "is_premium": user.is_premium,
+        "message_credits": user.message_credits,  # Changed key to match frontend
+        "total_purchased": user.total_credits_purchased,
+        "total_spent": float(user.total_spent),
+        "last_purchase": user.last_purchase_date.isoformat() if user.last_purchase_date else None
+    }
+
+
+@app.get("/user/purchase-history")
+async def get_purchase_history(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get purchase history."""
+    
+    user_id = current_user.get("user_id")
+    
+    purchases = db.query(CreditPurchase).filter(
+        CreditPurchase.user_id == user_id,
+        CreditPurchase.payment_status == "paid"
+    ).order_by(CreditPurchase.paid_at.desc()).all()
+    
+    return {
+        "purchases": [
+            {
+                "id": p.id,
+                "package": p.package,
+                "credits": p.credits_purchased,
+                "amount": float(p.amount),
+                "currency": p.currency,
+                "date": p.paid_at.isoformat(),
+                "payment_id": p.razorpay_payment_id
+            }
+            for p in purchases
+        ]
+    }
 
 # if __name__ == "__main__":
 #     import uvicorn
