@@ -17,6 +17,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY . .
+COPY noir.js .
+COPY noir.css .
 
 # Set environment
 ENV PYTHONPATH=/app
