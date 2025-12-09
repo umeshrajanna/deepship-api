@@ -256,8 +256,10 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"[WS_ENDPOINT] 🔌 WebSocket disconnected")
         if current_job_id:
             print(f"[WS_ENDPOINT] 🧹 Cleaning up job: {current_job_id}")
-            manager.disconnect(websocket, current_job_id)
             
+            manager.disconnect(websocket, current_job_id)
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 @app.get("/")
 async def root():
     return FileResponse("index.html")
