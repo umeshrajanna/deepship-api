@@ -9,8 +9,10 @@ from serpapi import GoogleSearch
 from query_transformer_return_statements import EnhancedQueryTransformer 
 transformer = EnhancedQueryTransformer()
 
-client = AsyncOpenAI(api_key="")
-
+from dotenv import load_dotenv 
+load_dotenv()
+import os
+client = AsyncOpenAI(api_key=os.getenv('OPENAI_KEY'))
 
 async def google_search(query, start=0):
   

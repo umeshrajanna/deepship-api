@@ -15,7 +15,10 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Dict
 from openai import AsyncOpenAI
 
-client = AsyncOpenAI(api_key="")
+from dotenv import load_dotenv 
+load_dotenv()
+import os
+client = AsyncOpenAI(api_key=os.getenv('OPENAI_KEY'))
  
 class EnhancedQueryTransformer:
     """Advanced query transformation with multi-search support"""

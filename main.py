@@ -260,16 +260,17 @@ async def websocket_endpoint(websocket: WebSocket):
             
 @app.get("/")
 async def root():
-    return {
-        "service": "Deep Search API",
-        "version": "1.0.0",
-        "endpoints": {
-            "create_search": "POST /search",
-            "get_status": "GET /search/{job_id}",
-            "websocket": "WS /ws",
-            "health": "GET /health"
-        }
-    }
+    return FileResponse("index.html")
+    # return {
+    #     "service": "Deep Search API",
+    #     "version": "1.0.0",
+    #     "endpoints": {
+    #         "create_search": "POST /search",
+    #         "get_status": "GET /search/{job_id}",
+    #         "websocket": "WS /ws",
+    #         "health": "GET /health"
+    #     }
+    # }
 
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, Header, Request,Form
@@ -3786,4 +3787,4 @@ async def get_purchase_history(
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
 import uvicorn
-uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
+uvicorn.run(app, host="0.0.0.0", port=8082, log_level="info")
