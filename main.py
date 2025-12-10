@@ -841,7 +841,7 @@ async def send_chat_message(
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
-    if conv.is_anonymous and conv.message_count >= 10:
+    if conv.is_anonymous and conv.message_count >= 100:
         return {
             "role": "assistant",
             "content": "You've reached the free message limit (10 messages). Please register for unlimited access!",
@@ -1712,7 +1712,7 @@ PAYMENT_PACKAGES = {
     }
 }
 
-ANONYMOUS_DAILY_LIMIT = 1  # 2 free messages per day
+ANONYMOUS_DAILY_LIMIT = 1000  # 2 free messages per day
 LOGGED_IN_DAILY_LIMIT = 2
 
 async def check_user_daily_limit(db: Session, user_id: str) -> tuple[bool, int]:
@@ -3785,5 +3785,5 @@ async def root():
 #     # uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
-# import uvicorn
-# uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
+import uvicorn
+uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
