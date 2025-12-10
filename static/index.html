@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DeepShip</title>
      
     
@@ -134,8 +135,6 @@
 
 
    <div class="container">
-    <!-- New left panel for conversations -->
- <!-- Left panel: Account + Conversations + Upgrade -->
 <div class="conversations-panel" >
     <!-- Auth Section -->
     <div class="panel-section" id="auth-section">
@@ -269,25 +268,21 @@
     <!-- Middle: Chat area -->
 <div class="chat-area">
     <!-- NEW: Chat header with conversation title -->
-    <div class="chat-header">
+    <!-- <div class="chat-header">
         <div class="conversation-indicator">
-            <!-- <div class="conversation-indicator-label">Current Conversation</div> -->
             <div class="conversation-indicator-title empty" id="current-conversation-title">
-                <!-- Select or start a conversation -->
             </div>
         </div>
         <div class="chat-actions">
-            <!-- Optional: Add export or other actions here later -->
         </div>
-    </div>
+    </div> -->
     
     <div class="messages" id="messages"></div>
 
    <!-- Replace the entire input-area section with this: -->
 <div class="input-area">
     <div class="input-container">
-        <div class="input-wrapper"> 
-       
+        <div class="input-wrapper">       
 
             <textarea 
                 id="message-input" 
@@ -344,28 +339,28 @@
            
         </div>  
            <div class="attached-files" id="attached-files"></div>
-      <div class="voice-controls" id="voice-controls">
-    <div class="voice-wave-indicator">
-        <div class="wave-container idle" id="voice-indicator">
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-        </div>
-        <button class="voice-close-btn" id="voice-stop-btn">×</button>
-    </div>
-</div>
-    </div>
+                <div class="voice-controls" id="voice-controls">
+                        <div class="voice-wave-indicator">
+                            <div class="wave-container idle" id="voice-indicator">
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                            </div>
+                            <button class="voice-close-btn" id="voice-stop-btn">×</button>
+                        </div>
+                </div>
+            </div>
   
     
     <!-- Voice controls (only show when voice mode active) -->
    
 </div>
   
-<div class="search-mode-toggle">
+<!-- <div class="search-mode-toggle">
     <div class="mode-selector">
         <button class="mode-btn active" data-mode="normal" id="mode-normal">
             Normal
@@ -392,7 +387,7 @@
         </button>
     </div>
 
-</div>
+</div> -->
  
     <div class="attached-files" id="attached-files"></div>
 </div>

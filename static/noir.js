@@ -5,6 +5,7 @@ function isUserLoggedIn() {
 
 // Show login panel
 function openLoginPanel() {
+
     const loginPanel = document.getElementById('login-panel');
     const loginPanelBackdrop = document.getElementById('login-panel-backdrop');
     
@@ -5130,12 +5131,14 @@ function downloadChartImage(index, title, chartType) {
 
 // Unified mode switching function
 async function switchMode(mode) {
+ 
     console.log(`🔄 Switching to mode: ${mode}`);
     localStorage.setItem('search_mode', mode);
      
 
-    modeelem = document.getElementById('mode')
+    modeelem = document.getElementById('mode')   
     modeelem.innerHTML = mode
+ 
     if (mode === 'voice') {
         isVoiceModeEnabled = true;
         isDeepSearchEnabled = false;
@@ -5188,10 +5191,12 @@ async function switchMode(mode) {
 // });
 
 document.querySelectorAll('.mode-icon-btn').forEach(btn => {
+
     btn.addEventListener('click', async function(e) {
+    
         e.preventDefault();
         const mode = this.dataset.mode;
-        
+
         // ✅ CHECK LOGIN STATUS FOR RESTRICTED MODES
         if ((mode === 'deep' || mode === 'lab' || mode === 'voice') && !isUserLoggedIn()) {
             console.log(`🔒 ${mode.toUpperCase()} mode requires login`);
@@ -6208,8 +6213,15 @@ function updateModeIndicator(mode) {
         'lab': 'LAB MODE',
         'voice': 'VOICE'
     };
-    
-    inputWrapper.setAttribute('data-mode-label', modeLabels[mode] || 'NORMAL');
+
+    if(isUserLoggedIn())
+    { 
+        inputWrapper.setAttribute('data-mode-label', modeLabels[mode] || 'NORMAL');
+    }
+    else
+    {
+         inputWrapper.setAttribute('data-mode-label',  'NORMAL');
+    }
 }
 
 
@@ -6969,17 +6981,6 @@ document.addEventListener('DOMContentLoaded', function() {
     updateLoginIconVisibility();
 });
 const messageInput = document.getElementById('message-input');
-
-messageInput.addEventListener('input', function() {
-    this.style.height = '24px';
-    this.style.overflowY = 'hidden';
-    
-    this.style.height = this.scrollHeight + 'px';
-    
-    if (this.scrollHeight >= 240) {
-        this.style.overflowY = 'auto';
-    }
-});
  
 messageInput.addEventListener('input', function() {
     // Reset height to recalculate

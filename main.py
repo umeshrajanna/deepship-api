@@ -258,11 +258,7 @@ async def websocket_endpoint(websocket: WebSocket):
             print(f"[WS_ENDPOINT] 🧹 Cleaning up job: {current_job_id}")
             
             manager.disconnect(websocket, current_job_id)
-from fastapi.staticfiles import StaticFiles
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
-@app.get("/")
-async def root():
-    return FileResponse("index.html")
+
     # return {
     #     "service": "Deep Search API",
     #     "version": "1.0.0",
@@ -2108,11 +2104,7 @@ async def export_message(
                 "Content-Disposition": f"attachment; filename=noir-ai-response-{message_id[:8]}.md"
             }
         )
-    
-@app.get("/")
-async def root():
-    return FileResponse("coming_soon.html")
-
+     
 
 import asyncio
 import json
@@ -3393,6 +3385,7 @@ async def verify_magic_link(
     if not magic_link or datetime.now(timezone.utc) > magic_link.expires_at:
         # Redirect to frontend with error
         frontend_url = os.getenv("FRONTEND_URL")
+        frontend_url = "http://127.0.0.1:8082"
         print("UN-SUCCESSFUL")
         return RedirectResponse(url=f"{frontend_url}/?error=invalid_link")
      
@@ -3781,12 +3774,16 @@ async def get_purchase_history(
             for p in purchases
         ]
     }
-
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+@app.get("/")
+async def root():
+    return FileResponse("index.html")
 # if __name__ == "__main__":
 #     import uvicorn
 #     port = int(os.getenv("PORT", 8082))
 #     # uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
-# import uvicorn
-# uvicorn.run(app, host="0.0.0.0", port=8082, log_level="info")
+import uvicorn
+uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")

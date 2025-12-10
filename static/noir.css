@@ -285,7 +285,7 @@ body {
     box-shadow: 0 0 5px var(--glow-cyan);
 }
 
-.messages {
+/* .messages {
     flex: 1;
     overflow-y: auto;
     padding: 32px;
@@ -293,13 +293,13 @@ body {
     flex-direction: column;
     gap: 24px;
     background: transparent;
-    align-items: flex-start;  /* Center all messages */
-}
+    align-items: flex-start;   
+} */
 /* When messages exist, make it grow to fill space */
 .messages:not(:empty) {
     flex: 1;
 }
-.message {
+/* .message {
     display: flex;
     gap: 0;
     width: 100%;
@@ -308,7 +308,7 @@ body {
     word-break: break-word; 
 }
 .message.user {
-    align-self: center;  /* Keep centered */
+    align-self: center;  
     flex-direction: row-reverse; 
     border: none !important;  
 }
@@ -317,8 +317,8 @@ body {
          
     width: 100%; 
     text-align: left;
-    align-self: flex-start;  /* Keep centered */
-}
+    align-self: flex-start;   
+} */
 
 @keyframes messageSlide {
     from {
@@ -331,12 +331,12 @@ body {
     }
 }
  
-.message.user {
-    width: auto;  /* User messages wrap to content */
-    max-width: 100%;  /* But don't exceed 60% */
-    align-self: flex-end;  /* Keep on right side */
+/* .message.user {
+    width: auto;   
+    max-width: 100%;  
+    align-self: flex-end;   
     font-size: 15px;
-}
+} */
 
 .message-avatar {
     /* width: 40px;
@@ -367,9 +367,8 @@ body {
     box-shadow: 0 0 15px var(--glow-magenta);
 }
 
-.message-content {
-    /* background: #242424; */
-    /* border:1px solid red; */
+/* .message-content {
+ 
     padding: 16px 20px;
     border-radius: 4px;
     border-left: none;
@@ -380,17 +379,14 @@ body {
     overflow-wrap: break-word;
     width: 100%;  
     border:none !important
-    /* box-sizing: border-box; */
- 
-    /* border:1px solid red;   */
-    
-}
+  
+} */
 
-.message.assistant .message-content {
+/* .message.assistant .message-content {
     text-align: left !important;
     width: 100%;
     display: block; 
-}   
+}    */
 
 .streaming-message {
     width: 100% !important;
@@ -432,12 +428,12 @@ body {
     color:red
 } */
 
-.messages > * {
-    width: 100%;  /* All messages get exactly 70% width */
+/* .messages > * {
+    width: 100%;   
     max-width: 100%; 
-    /* min-width: 70%;   */
+ 
 }
-  
+   */
 .message-content h1, .message-content h2, .message-content h3 {
     color: var(--neon-cyan);
     margin-top: 16px;
@@ -526,7 +522,7 @@ body {
         box-shadow: 0 0 10px var(--glow-cyan);
     }
 }
-.input-area {
+/* .input-area {
     backdrop-filter: none;
     flex-shrink: 0;
     padding: 24px 0;
@@ -534,19 +530,19 @@ body {
     justify-content: center;
     width: 100%;
 }
- 
+  */
 /* Ensure it stays the same in both states */
-.chat-area.empty-chat .input-container {
+/* .chat-area.empty-chat .input-container {
     width: 50vw;
     max-width: 50vw;
     min-width: 50vw;
-}
+} */
 
-.chat-area:not(.empty-chat) .input-container {
+/* .chat-area:not(.empty-chat) .input-container {
     width: 50vw;
     max-width: 50vw;
     min-width: 50vw;
-}
+} */
 
  /* #message-input {
  
@@ -652,6 +648,7 @@ body {
     white-space: nowrap;
     border-radius: 8px;
     width: auto; /* Changed from default */
+ 
 }
 
 
@@ -1410,7 +1407,7 @@ body {
     background: transparent;
     position: relative;
 }   
-
+/* 
 @media (max-width: 1024px) {
     .chat-area {
         flex: 0 0 70%;
@@ -1418,9 +1415,9 @@ body {
     .control-panel {
         flex: 0 0 30%;
     }
-}
+} */
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .container {
         flex-direction: column;
     }
@@ -1433,7 +1430,7 @@ body {
     .message {
         max-width: 95%;
     }
-}
+} */
 
 .message-content,
 .reasoning-step-content,
@@ -1548,7 +1545,8 @@ body {
                 min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
+    position: fixed !important;
+    height: 100%;
     z-index: 100;
 }
  
@@ -1645,14 +1643,14 @@ body.logged-in .panel-section:has(.conversations) {
 }
  
 
-.chat-area.empty-chat .input-area {
+/* .chat-area.empty-chat .input-area {
  flex-shrink: 0;
     padding: 24px 0;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-}
+} */
 .panel-section:has(#conversations) {
     display: none;
 }
@@ -1674,7 +1672,7 @@ body.logged-in .panel-section:has(#conversations) {
     overflow-y: auto;
     overflow-x: visible;
 }
- 
+/*  
 @media (max-width: 1400px) {
     .conversations-panel {
         flex: 0 0 200px;
@@ -1687,10 +1685,10 @@ body.logged-in .panel-section:has(#conversations) {
         min-width: 250px;
         max-width: 250px;
     }
-}
+} */
 
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .conversations-panel {
         flex: 0 0 180px;
         min-width: 180px;
@@ -1703,7 +1701,7 @@ body.logged-in .panel-section:has(#conversations) {
         max-width: 220px;
     }
 }
- 
+  */
 
 /* Hide upgrade section by default (not logged in) */
 .panel-section:has(.premium-card) {
@@ -2171,6 +2169,7 @@ body.logged-in .panel-section:has(.premium-card) {
     background: rgba(42, 42, 42, 0.5);
     padding: 4px;
     border-radius: 8px;
+
 }
 
 .mode-btn {
@@ -2206,6 +2205,7 @@ body.logged-in .panel-section:has(.premium-card) {
 .mode-hint {
     font-size: 9px;
     opacity: 0.7;
+
 }
 
 .assets-container {
@@ -2317,11 +2317,11 @@ body.logged-in .panel-section:has(.premium-card) {
 }
 
 /* Make it responsive - single column on smaller screens */
-@media (max-width: 1200px) {
+/* @media (max-width: 1200px) {
     .assets-container {
         grid-template-columns: 1fr;
     }
-}
+} */
 
 /* Asset item styling */
 .asset-item {
@@ -3162,9 +3162,9 @@ overflow-y: hidden;  /* No vertical scroll */
 
 /* Input mode icons container */
 .input-mode-icons {
-    position: absolute;
-    right: 55px;
-    bottom: 12px;
+    position: absolute; /* Un-comment this! */
+    right: 50px; /* Changed from 55px to 0 */
+    bottom: 2px;
     display: flex;
     gap: 4px;
     align-items: center;
@@ -3173,7 +3173,8 @@ overflow-y: hidden;  /* No vertical scroll */
     background: #1a1a1a;
     padding: 4px;
     border-radius: 4px;
- justify-content: space-between;
+    justify-content: space-between;
+    flex-shrink: 0;
 }
 /* Mode icon buttons */
 .mode-icon-btn {
@@ -3205,11 +3206,10 @@ overflow-y: hidden;  /* No vertical scroll */
     cursor: not-allowed;
     opacity: 0.5;
 }
-
-/* Adjust textarea padding to make room for icons */
+/* 
 #message-input {
-    padding-right: 140px; /* Space for mode icons + send button */
-}
+    padding-right: 140px;
+} */
 
 /* Voice controls - show below input when active */
 .voice-controls {
@@ -3323,19 +3323,19 @@ overflow-y: hidden;  /* No vertical scroll */
     display: none; /* Hide empty messages container */
 }
 
-.chat-area.empty-chat .input-area {
+/* .chat-area.empty-chat .input-area {
     margin-top: auto;
     margin-bottom: auto;
 }
- 
+  */
 
 /* When messages exist, input slides to bottom */
-.chat-area:not(.empty-chat) .input-area {
+/* .chat-area:not(.empty-chat) .input-area {
      position: static;
     transform: translateY(0);
     width: auto;
     animation: slideDown 0.5s ease-out;
-}
+} */
  
 
 @keyframes slideDown {
@@ -3348,39 +3348,29 @@ overflow-y: hidden;  /* No vertical scroll */
         opacity: 1;
     }
 }
-/* ADD THESE NEW RULES: */
-
-/* Keep header at top always */
 .chat-header {
     flex-shrink: 0;
 }
 
-/* Messages container grows to fill space */
-.messages {
+/* .messages {
     flex: 1;
     overflow-y: auto;
-    /* padding: 32px; */
     display: flex;
     flex-direction: column;
-    /* gap: 24px; */
- 
     align-items: flex-start;
-    /* border:1px solid blue; */
     width: 50% !important;
-}
+} */
 
-.chat-area .messages {
+/* .chat-area .messages {
     flex: 1;
     overflow-y: auto;
     padding: 32px;
     display: flex;
     flex-direction: column;
-    /* gap: 24px; */
-    /* background: red; */
+ 
     align-items: center;
-    visibility: hidden; /* Hidden by default */
-    
-}
+    visibility: hidden;   
+} */
 
 .chat-area:not(.empty-chat) .messages {
     visibility: visible;
@@ -3388,28 +3378,28 @@ overflow-y: hidden;  /* No vertical scroll */
 
 
 /* Input area pushed to bottom normally */
-.chat-area .input-area {
-   position: absolute; /* Centered by default */
+/* .chat-area .input-area {
+   position: absolute;  
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 70%;
     flex-shrink: 0;
-}
+} */
 
 /* When empty, center the input in the remaining space */
-.chat-area.empty-chat .messages {
+/* .chat-area.empty-chat .messages {
     display: flex;
     align-items: center;
     justify-content: center;
-}
+} */
 
-.chat-area.empty-chat .input-area {
+/* .chat-area.empty-chat .input-area {
     margin-top: auto;
     margin-bottom: auto;
      transform: translate(-50%, -50%);
      
-}
+} */
 
 .auth-google-button {
     width: 100%;
@@ -4428,21 +4418,21 @@ body {
 }
 
 /* Responsive adjustments for BOTH layouts */
-@media (max-width: 1400px) {
+/* @media (max-width: 1400px) {
     .sources-grid,
     .query-sources {
         grid-template-columns: repeat(2, 48%);
         gap: 14px;
     }
-}
+} */
 
-@media (max-width: 900px) {
+/* @media (max-width: 900px) {
     .sources-grid,
     .query-sources {
         grid-template-columns: 100%;
         gap: 12px;
     }
-}
+} */
 
 /* Ensure consistent card heights */
 .tab-content {
@@ -4574,7 +4564,7 @@ body {
 }
 
 /* Responsive */
-@media (max-width: 1400px) {
+/* @media (max-width: 1400px) {
     .query-sources-grid {
         grid-template-columns: repeat(2, 48%);
         gap: 14px;
@@ -4594,7 +4584,7 @@ body {
     .query-text {
         flex-basis: 100%;
     }
-}
+} */
 
 /* Animation */
 .query-sources-group {
@@ -4871,14 +4861,14 @@ body.split-screen-active .chat-area {
     /* border:1px solid red */
 }
 
-.split-left .messages {
+/* .split-left .messages {
     flex: 1;
     overflow-y: auto;
     padding: 32px;
     display: flex;
     flex-direction: column;
     gap: 24px;
-}
+} */
 
 .split-left .messages::-webkit-scrollbar {
     width: 2px;
@@ -4894,21 +4884,21 @@ body.split-screen-active .chat-area {
 } */
 
 /* Split left input area */
-.split-left .input-area {
+/* .split-left .input-area {
     flex-shrink: 0;
     padding: 20px;
     background: #1a1a1a;
     
-}
+} */
 
-.split-left .input-container {
+/* .split-left .input-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     max-width: 100%;
-}
+} */
 
-.split-left .input-wrapper {
+/* .split-left .input-wrapper {
     position: relative;
     width: 100%;
     max-width: 100%;
@@ -4918,14 +4908,14 @@ body.split-screen-active .chat-area {
     background: #1a1a1a;
     border: 1px solid #d9d9e3;
     border-radius: 20px;
-}
+} */
 
 
 /* Ensure input is visible in split view */
-body.split-screen-active .split-left .input-wrapper {
+/* body.split-screen-active .split-left .input-wrapper {
     display: flex !important;
     visibility: visible !important;
-}
+} */
 
 body.split-screen-active .split-left #message-input {
     display: block !important;
@@ -5126,7 +5116,7 @@ body.split-screen-active .split-left #message-input {
 }
 
 /* Responsive Design for Split Screen */
-@media (max-width: 1200px) {
+/* @media (max-width: 1200px) {
     .split-screen-container {
         flex-direction: column;
     }
@@ -5139,11 +5129,11 @@ body.split-screen-active .split-left #message-input {
     
     .split-left {
         border-right: none;
-        /* border-bottom: 1px solid #333; */
+ 
     }
-}
+} */
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .split-tabs {
         padding: 8px 12px;
     }
@@ -5162,9 +5152,9 @@ body.split-screen-active .split-left #message-input {
         padding: 12px;
         font-size: 11px;
     }
-}
+} */
  /* Messages in split screen - 95% width */
-.split-left .messages {
+/* .split-left .messages {
     flex: 1;
     overflow-y: auto;
     padding: 32px;
@@ -5172,7 +5162,7 @@ body.split-screen-active .split-left #message-input {
     flex-direction: column;
     gap: 24px;
     width: 95%;
-    margin: 0 auto; /* Center the messages */
+    margin: 0 auto;  
    
 }
 
@@ -5181,12 +5171,10 @@ body.split-screen-active .split-left #message-input {
     max-width: 100%;
 }
 
-/* Ensure normal mode messages stay at 80% */
 .chat-area:not(.split-screen-active) .messages {
     width: 80%;
 }
 
-/* Messages in normal mode remain 80% */
 .messages {
     flex: 1;
     overflow-y: auto;
@@ -5197,7 +5185,7 @@ body.split-screen-active .split-left #message-input {
     background: transparent;
     align-items: flex-start;
     width: 80%;
-}
+} */
 
 
 /* Toggle button - Fixed */
@@ -5248,20 +5236,20 @@ body.split-screen-active .split-left #message-input {
 }
 
     /* Split screen input adjustments */
-.split-left .input-area {
+/* .split-left .input-area {
     flex-shrink: 0;
     padding: 20px;
     background: #1a1a1a;
-    /* border-top: 1px solid #333; */
-}
+ 
+} */
 
-.split-left .input-container {
+/* .split-left .input-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     max-width: 100%;
     align-items: center;
-}
+} */
 
 /* Target the placeholder div that holds the input wrapper */
 #split-input-placeholder {
@@ -5272,9 +5260,9 @@ body.split-screen-active .split-left #message-input {
 }
 
 /* Input wrapper inside split view */
-#split-input-placeholder .input-wrapper {
+/* #split-input-placeholder .input-wrapper {
     position: relative;
-    width: 100%; /* 100% of the 80% placeholder */
+    width: 100%; 
     max-width: 100%;
     height: 12vh;
     display: flex !important;
@@ -5282,7 +5270,7 @@ body.split-screen-active .split-left #message-input {
     background: #1a1a1a;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-}
+} */
 
 /* Attached files in split view */
 #split-input-placeholder .attached-files {
@@ -6268,6 +6256,7 @@ body {
 
 .search-mode-label {
     color: #565869;
+   
 }
 
 .toggle-switch {
@@ -7276,7 +7265,7 @@ button,
     content: attr(data-mode-label);
     position: absolute;
     left: 16px;
-    bottom: 12px;
+    bottom: 2px;
     font-family: 'Inter', sans-serif;
     font-size: 11px;
     font-weight: 600;
@@ -7321,7 +7310,7 @@ button,
 
 .send-icon-btn {
     position: absolute;
-    right: 12px;
+    /* right: 12px; */
     top: 50% !important;
     bottom: auto !important;
     transform: translateY(-50%) !important;
@@ -7329,7 +7318,7 @@ button,
     border: none;
     color: #10a37f;
     cursor: pointer;
-    padding: 6px;
+    /* padding: 6px; */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -8367,7 +8356,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 }
 
 /* Mobile Responsive */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .conversations-selection-panel {
         width: 100%;
         left: -100%;
@@ -8376,7 +8365,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
     .conversations-selection-panel.active {
         left: 0;
     }
-}
+} */
 
 /* Conversations Icon Button */
 .conversations-icon-btn {
@@ -8798,7 +8787,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 }
 
 /* Mobile Responsive */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .premium-popup-modal {
         width: 95%;
         max-width: none;
@@ -8807,7 +8796,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
     .premium-popup-content {
         padding: 24px;
     }
-}
+} */
 
 /* Logout Icon Button */
 .logout-icon-btn {
@@ -9232,16 +9221,16 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
     opacity: 1 !important;
     pointer-events: all !important;
 }
-.input-area {
+/* .input-area {
     backdrop-filter: none;
     flex-shrink: 0;
     padding: 24px 0;
     display: flex;
     justify-content: center;
     width: 80%;
-}
+} */
 
-.input-container {
+/* .input-container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -9249,25 +9238,25 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
     max-width: 40vw;
     min-width: 40vw;
     position: relative;
-}
+} */
 
-.input-wrapper {
+/* .input-wrapper {
     position: relative;
     width: 80%;
     display: flex;
     flex-direction: column;
     background: white;
-    /* border: 1px solid rgba(255, 255, 255, 0.2); */
+   
     color: #ffffff;
     border-radius: 20px;
     box-sizing: border-box;
-    padding-bottom: 50px; /* Space for bottom controls */
+    padding-bottom: 50px;  
  
-}
+} */
 
 #message-input {
     width: 80%;
-    min-height: 6px; /* Start with ~1-2 lines */
+    min-height: 60px; /* Start with ~1-2 lines */
     max-height: 250px; /* Max ~5-6 lines before scroll */
     padding: 12px 12px 12px 0 !important;
     background: #ffffff;;
@@ -9288,7 +9277,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 }
  
 #message-input::-webkit-scrollbar {
-    width: 4px;
+    width: 8px;
 }
 
 #message-input::-webkit-scrollbar-thumb {
@@ -9298,7 +9287,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 .send-icon-btn {
     position: absolute;
     bottom: 8px;
-    right: 12px;
+    right: 0px;
     z-index: 10;
 }
 
@@ -9351,17 +9340,17 @@ body.logged-in .login-icon-btn {
     justify-content: center !important;
 }
 
-.split-left .messages{
+/* .split-left .messages{
     width: 80% !important;
-}
+} */
 
 /* Fix input wrapper alignment and styling in split mode */
-.split-left .input-wrapper {
+/* .split-left .input-wrapper {
     background: red !important;
     border-radius: 20px !important;
     width: 140% !important;
     max-width: 140% !important;
-}
+} */
 
 .split-left .split-input-placeholder
 {
@@ -9372,16 +9361,16 @@ body.logged-in .login-icon-btn {
 .split-left #message-input {
     background: #ffffff !important;
     color: #2d333a !important;
-    width: 100% !important;
+    /* width: 100% !important; */
     padding: 12px 180px 12px 50px !important;
 }
 
 /* Fix input container in split mode */
-.split-left .input-container {
+/* .split-left .input-container {
     width: 90% !important;
     max-width: 90% !important;
     min-width: 90% !important;
-}
+} */
 
 /* Fix mode icons background in split mode */
 .split-left .input-mode-icons {
@@ -9604,7 +9593,7 @@ body .conversations-panel.collapsed ~ .cloud-wizard-panel {
     z-index: 10002 !important;
 }
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .cloud-wizard-backdrop {
         left: 0;
         width: 100%;
@@ -9614,7 +9603,7 @@ body .conversations-panel.collapsed ~ .cloud-wizard-panel {
         left: 0;
         width: 100%;
     }
-}
+} */
 
 .conversations-panel {
     position: relative;
@@ -10288,14 +10277,14 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 }
 
 /* Add to your CSS */
-.messages:empty ~ .input-area {
+/* .messages:empty ~ .input-area {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 80%;
     max-width: 700px;
-}
+} */
 
 .messages:empty {
     display: none;
@@ -10623,7 +10612,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+/* @media (max-width: 900px) {
     .premium-packages {
         flex-wrap: wrap;
     }
@@ -10635,9 +10624,9 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     .premium-package.popular:hover {
         transform: translateY(-3px);
     }
-}
+} */
 
-@media (max-width: 600px) {
+/* @media (max-width: 600px) {
     .premium-popup-modal {
         padding: 21px 14px;
     }
@@ -10649,7 +10638,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     .premium-package {
         max-width: 100%;
     }
-}
+} */
 
 
 /* ===================================================
@@ -10659,7 +10648,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
 /* ============================================
    MOBILE - KEEP ICON SIDEBAR VISIBLE
    ============================================ */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) { */
     
     /* Icon sidebar - always visible */
     /* .conversations-panel {
@@ -10678,7 +10667,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     } */
     
     /* Mobile Panel - Must be at end of file */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .conversations-panel {
         position: fixed !important;
         top: 0 !important;
@@ -10687,12 +10676,12 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         max-width: 350px !important;
         height: 100vh !important;
         z-index: 100000 !important;
-        /* transform: translateX(100%) !important; */
+ 
         transition: transform 0.3s ease !important;
-    }
+    } */
      
     /* Hide text content in sidebar */
-    .conversations-panel .panel-logo {
+    /* .conversations-panel .panel-logo {
         display: none !important;
     }
     
@@ -10726,10 +10715,10 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     
     .conversations-panel .upgrade-section {
         display: none !important;
-    }
+    } */
     
     /* Show only icon buttons */
-    .conversations-icon-btn,
+    /* .conversations-icon-btn,
     .new-chat-icon-btn,
     .news-icon-btn,
     .login-icon-btn,
@@ -10741,25 +10730,25 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         width: 44px !important;
         height: 44px !important;
         margin-bottom: 12px !important;
-    }
+    } */
     
     /* Panel sections - center icons */
-    .conversations-panel .panel-section {
+    /* .conversations-panel .panel-section {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         padding: 12px 8px !important;
         border-bottom: none !important;
-    }
+    } */
     
     /* Chat area - leave space for icon bar */
-    .chat-area {
+    /* .chat-area {
         margin-left: 60px !important;
         width: calc(100vw - 60px) !important;
-    }
+    } */
     
     /* Control panel - hidden, slides in from right */
-    .control-panel {
+    /* .control-panel {
         position: fixed !important;
         right: 0 !important;
         top: 0 !important;
@@ -10770,88 +10759,88 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         transition: transform 0.3s ease !important;
         z-index: 10000 !important;
         display: none !important;
-    }
+    } */
     
-    .control-panel.mobile-active {
+    /* .control-panel.mobile-active {
         transform: translateX(0) !important;
         display: flex !important;
-    }
+    } */
     
     /* ============================================
        OVERLAY PANELS - Hidden, slide in when clicked
        ============================================ */
     
     /* Conversations Selection Panel */
-    .conversations-selection-panel {
+    /* .conversations-selection-panel {
         position: fixed !important;
         left: 60px !important;
         top: 0 !important;
         width: calc(100vw - 60px) !important;
         height: 100vh !important;
         z-index: 10001 !important;
-    }
+    } */
     
     /* News Panel */
-    .news-selection-panel {
+    /* .news-selection-panel {
         position: fixed !important;
         left: 60px !important;
         top: 0 !important;
         width: calc(100vw - 60px) !important;
         height: 100vh !important;
         z-index: 10001 !important;
-    }
+    } */
     
-    .news-overlay {
+    /* .news-overlay {
         left: 60px !important;
         width: calc(100vw - 60px) !important;
-    }
+    } */
     
     /* Login Panel */
-    .login-panel {
+    /* .login-panel {
         position: fixed !important;
         right: 0 !important;
         top: 0 !important;
         width: calc(100vw - 60px) !important;
         height: 100vh !important;
         z-index: 10001 !important;
-    }
+    } */
     
     /* Use Cases Panel */
-    .use-cases-selection-panel {
+    /* .use-cases-selection-panel {
         position: fixed !important;
         left: 60px !important;
         top: 0 !important;
         width: calc(100vw - 60px) !important;
         height: 100vh !important;
         z-index: 10001 !important;
-    }
+    } */
     
-    .use-cases-overlay {
+    /* .use-cases-overlay {
         left: 60px !important;
         width: calc(100vw - 60px) !important;
-    }
+    } */
     
     /* Cloud Wizard */
-    .cloud-wizard-panel {
+    /* .cloud-wizard-panel {
         position: fixed !important;
         left: 60px !important;
         top: 0 !important;
         width: calc(100vw - 60px) !important;
         height: 100vh !important;
         z-index: 10001 !important;
-    }
+    } */
     
     /* Premium Popup */
-    .premium-popup-modal {
+    /* .premium-popup-modal {
         width: calc(100vw - 60px) !important;
         height: 100vh !important;
         max-height: 100vh !important;
         left: 60px !important;
         border-radius: 0 !important;
-    }
+    } */
     
     /* Backdrops - cover area after icon bar */
-    .news-panel-backdrop,
+    /* .news-panel-backdrop,
     .login-panel-backdrop,
     .conversations-panel-backdrop,
     .use-cases-panel-backdrop,
@@ -10859,30 +10848,30 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     .premium-popup-backdrop {
         left: 60px !important;
         width: calc(100vw - 60px) !important;
-    }
+    } */
     
     /* ============================================
        INPUT AND MESSAGES - Full width
        ============================================ */
     
-    .input-container {
+    /* .input-container {
         width: 95% !important;
-    }
+    } */
     
-    .messages {
+    /* .messages {
         width: 100% !important;
         padding: 16px 12px !important;
-    }
+    } */
     
-    #message-input {
+    /* #message-input {
         font-size: 16px !important;
         padding: 12px 60px 12px 12px !important;
-    }
+    } */
     
     /* ============================================
        GRIDS - Single column
        ============================================ */
-    
+/*     
     .sources-grid,
     .query-sources-grid,
     .assets-container,
@@ -10891,98 +10880,43 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     .use-cases-categories,
     .premium-packages {
         grid-template-columns: 1fr !important;
-    }
-}
+    } */
+/* } */
 
 /* ============================================
    VERY SMALL MOBILE - Smaller icon bar
    ============================================ */
-@media (max-width: 480px) {
-    .conversations-panel {
-        width: 50px !important;
-        min-width: 50px !important;
-        max-width: 50px !important;
-    }
-    
-    .conversations-icon-btn,
-    .new-chat-icon-btn,
-    .news-icon-btn,
-    .login-icon-btn,
-    .logout-icon-btn,
-    .premium-icon-btn,
-    .cloud-icon-btn,
-    .use-cases-icon-btn {
-        width: 40px !important;
-        height: 40px !important;
-        margin-bottom: 8px !important;
-    }
-    
-    .chat-area {
-        margin-left: 50px !important;
-        width: calc(100vw - 50px) !important;
-    }
-    
-    .conversations-selection-panel,
-    .news-selection-panel,
-    .use-cases-selection-panel,
-    .cloud-wizard-panel,
-    .premium-popup-modal {
-        left: 50px !important;
-        width: calc(100vw - 50px) !important;
-    }
-    
-    .news-overlay,
-    .use-cases-overlay {
-        left: 50px !important;
-        width: calc(100vw - 50px) !important;
-    }
-    
-    .news-panel-backdrop,
-    .login-panel-backdrop,
-    .conversations-panel-backdrop,
-    .use-cases-panel-backdrop,
-    .cloud-wizard-backdrop,
-    .premium-popup-backdrop {
-        left: 50px !important;
-        width: calc(100vw - 50px) !important;
-    }
-}
 
 /* ============================================
    DESKTOP - Keep original layout
    ============================================ */
-@media (min-width: 769px) {
+/* @media (min-width: 769px) {
     .conversations-panel,
     .control-panel {
         position: relative !important;
         display: flex !important;
     }
-}
+} */
 
  /* ============================================
    MOBILE SPLIT SCREEN MODE - FINAL VERSION
    ============================================ */
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     
-    /* Lock body and hide all other UI */
-    body.split-screen-active {
+     body.split-screen-active {
         position: fixed !important;
         overflow: hidden !important;
         width: 100vw !important;
         height: 100vh !important;
         margin: 0 !important;
         padding: 0 !important;
-    }
-    
-    /* Hide all panels when split screen is active */
+    } 
     body.split-screen-active .conversations-panel,
     body.split-screen-active .control-panel,
     body.split-screen-active .chat-area {
         display: none !important;
-    }
-    
-    /* Split screen container - full viewport */
+    } 
     body.split-screen-active .split-screen-container {
         position: fixed !important;
         top: 0 !important;
@@ -10998,8 +10932,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         padding: 0 !important;
         overflow: hidden !important;
     }
-    
-    /* Split-left: Top 50% - Messages area */
+     
     body.split-screen-active .split-left {
         position: relative !important;
         width: 100vw !important;
@@ -11021,14 +10954,12 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         box-sizing: border-box !important;
         z-index: 1 !important;
     }
-    
-    /* Force all children of split-left to be full width */
+     
     body.split-screen-active .split-left > * {
         width: 100% !important;
         max-width: 100% !important;
     }
-    
-    /* Messages container */
+     
     body.split-screen-active #split-messages {
         flex: 1 !important;
         width: 100% !important;
@@ -11040,8 +10971,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         box-sizing: border-box !important;
         -webkit-overflow-scrolling: touch !important;
     }
-    
-    /* Split-right: Bottom 50% - App preview */
+     
     body.split-screen-active .split-right {
         position: relative !important;
         width: 100vw !important;
@@ -11062,17 +10992,11 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         padding: 0 !important;
         box-sizing: border-box !important;
     }
-    
-    /* Split tabs - lower z-index than input */
+     
     body.split-screen-active .split-tabs {
         z-index: 2 !important;
     }
-    
-    /* ============================================
-       INPUT AREA - 80% width at bottom of top half
-       ============================================ */
-    
-    /* Input wrapper - positioned at bottom of split-left, preserve original styling */
+     
     body.split-screen-active .input-wrapper {
         display: flex !important;
         position: absolute !important;
@@ -11087,10 +11011,9 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         visibility: visible !important;
         pointer-events: auto !important;
         margin: 0 !important;
-        /* Preserve original colors, backgrounds, borders, shadows */
+  
     }
-    
-    /* Override base CSS input width rules with higher specificity */
+     
     body.split-screen-active .input-container,
     body.split-screen-active .chat-area.empty-chat .input-container,
     body.split-screen-active .chat-area:not(.empty-chat) .input-container {
@@ -11101,35 +11024,28 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         padding: 0 !important;
         flex: 1 !important;
         box-sizing: border-box !important;
-        /* Preserve original styling */
+ 
     }
-    
-    /* Textarea/input field - full width of container */
+     
     body.split-screen-active .input-container textarea,
     body.split-screen-active .input-container input {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 100% !important;
         box-sizing: border-box !important;
-        /* Preserve original colors, fonts, styling */
     }
     
-    /* Close button - ensure it's visible and clickable */
     body.split-screen-active .split-close {
         display: flex !important;
         pointer-events: auto !important;
         z-index: 10 !important;
         min-height: 40px !important;
     }
-}
+} */
+ 
 
-/* ============================================
-   MOBILE INPUT - NORMAL MODE (not split screen)
-   ============================================ */
-
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     
-    /* Input wrapper - 90% width on mobile when NOT in split screen */
     body:not(.split-screen-active) .input-wrapper {
         width: 90vw !important;
         max-width: 90vw !important;
@@ -11137,7 +11053,6 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
    
     }
     
-    /* Override base input container width rules for mobile */
     body:not(.split-screen-active) .input-container,
     body:not(.split-screen-active) .chat-area.empty-chat .input-container,
     body:not(.split-screen-active) .chat-area:not(.empty-chat) .input-container {
@@ -11146,24 +11061,21 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         min-width: 100% !important;
     }
     
-    /* Textarea/input full width */
     body:not(.split-screen-active) .input-container textarea,
     body:not(.split-screen-active) .input-container input {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
-}
+} */
 
 /* ============================================
    MOBILE SPLIT SCREEN MODE
    ============================================ */
 
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     
-    /* ... [keep all your existing split screen CSS] ... */
-    
-    /* Input wrapper in split screen - 80% width */
+ 
     body.split-screen-active .input-wrapper {
         display: flex !important;
         position: absolute !important;
@@ -11180,10 +11092,9 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         margin: 0 !important;
     }
 }
- 
+  */
 
-/* Mobile compact fix - 20% SMALLER + CENTERED */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .premium-popup-backdrop {
         z-index: 99998 !important;
     }
@@ -11305,7 +11216,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
         font-size: 2.4vw !important;
         margin-bottom: 1.6vw !important;
     }
-}
+} */
 
 .pasted-file-attachment {
     margin-bottom: 10px;
@@ -11314,25 +11225,293 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     border-radius: 8px;
 }
  
-/* Hide use cases when logged in */
 body.logged-in .use-cases-panel,
 body.logged-in .use-cases-icon-btn {
     display: none !important;
 }
  
 
-}
+ 
 
-@media (max-width: 1024px) {
-    /* Make sure logo is visible in mobile panel */
+/* @media (max-width: 1024px) {
+ 
     .conversations-panel .panel-logo {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
     }
-    
-    /* Make panel scrollable if content is too tall */
+ 
     .conversations-panel {
         overflow-y: auto !important;
+    }
+} */
+
+/* @media (max-width: 1024px) {
+    .conversations-panel {
+        position: fixed !important;
+        top: 0 !important;
+       
+    
+        height: 100vh !important;
+        z-index: 100000 !important;
+        transition: width 0.3s ease !important;
+        overflow: hidden !important;
+    }
+    
+    .conversations-panel.mobile-open {
+        width: 85vw !important;  
+        max-width: 350px !important;
+    }
+} */
+
+/* Input wrapper - fluid scaling for ALL devices */
+/* .input-wrapper {
+    width: clamp(300px, 90%, 800px) !important;
+    margin: 0 auto !important;
+    padding: clamp(12px, 2vw, 24px) !important;
+    box-sizing: border-box !important;
+} */
+
+/* .input-container {
+    width: 100% !important;
+}
+
+.input-container textarea {
+    width: 100% !important;
+    padding: clamp(10px, 2vw, 16px) !important;
+    font-size: clamp(14px, 1vw, 16px) !important;
+    box-sizing: border-box !important;
+    min-height: 60px !important;
+    max-height: 250px !important;
+} */
+
+/* Buttons */
+#send-btn,
+#file-upload-btn {
+    width: clamp(40px, 8%, 50px) !important;
+    height: clamp(40px, 8%, 50px) !important;
+}
+ 
+/* 
+.input-area  {
+ 
+    width: 100% !important;
+    border: 1px solid red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+ 
+.input-area .input-container  {
+ 
+    width: 95% !important;
+    border: 1px solid red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+ 
+
+.input-area .input-wrapper  {
+ 
+    width: 100% !important;
+    border: 1px solid red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+} */
+
+
+/* .input-area {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border:1px solid blue
+}
+
+.input-area .input-container {
+    width: 95%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border:1px solid red
+}
+
+.input-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border:1px solid yellow
+} */
+
+
+ /* Input area - single definition */
+.input-area {
+    width: 90%; /* Mobile default */
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid blue;
+    box-sizing: border-box; /* Important! */
+    min-height: auto;
+}
+
+/* Tablet - both scale together */
+@media (min-width: 300px) {
+    .input-area {
+        width: 70%;
+    }
+}
+
+/* Desktop - both scale together */
+@media (min-width: 1200px) {
+    .input-area {
+        width: 50%;
+    }
+}
+
+.input-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.input-wrapper {
+   
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    position: relative !important;
+    min-height: 100px;
+    bottom: 5px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    margin-left: 60px; /* For sidebar */
+}
+
+/* Mobile - remove margin when sidebar is likely hidden */
+@media (max-width: 767px) {
+    .input-wrapper {
+        margin-left: 0; /* Remove sidebar margin on mobile */
+    }
+    
+    /* Adjust when panel is visible */
+    body .conversations-panel:not(.collapsed) ~ * .input-wrapper {
+        margin-left: 0; /* No margin, panel overlays */
+    }
+}
+
+#message-input {
+    flex: 1 !important;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+
+@media (max-width: 768px) {
+    .messages {
+        padding: 16px; /* Less padding on tablets */
+        width: 70%;
+    }
+}
+
+/* Mobile - minimal padding */
+@media (max-width: 480px) {
+    .messages {
+        padding: 8px; /* Minimal padding on mobile */
+        gap: 16px; /* Reduce gap between messages too */
+    }
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+    .messages {
+        width: 50%;
+        padding: 32px; /* Full padding on desktop */
+    }
+}
+
+/* Messages container */
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+    width: 90%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding-left: 60px;
+}
+
+.messages > * {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    .messages {
+        width: 70%;
+    }
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+    .messages {
+        width: 50%;
+    }
+}
+
+/* Rest of your media queries for buttons and labels */
+@media (max-width: 768px) {
+    .input-wrapper::before,
+    .input-wrapper[data-mode-label]::before {
+        font-size: 10px;
+        padding: 4px 8px;
+        left: 12px;
+        bottom: 10px;
+        letter-spacing: 0.2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .input-wrapper::before,
+    .input-wrapper[data-mode-label]::before {
+        font-size: 9px;
+        padding: 3px 6px;
+        left: 8px;
+        bottom: 8px;
+        letter-spacing: 0.1px;
+    }
+    
+    .input-mode-icons {
+        gap: 1px;
+        padding: 2px;
+    }
+    
+    .mode-icon-btn {
+        padding: 4px;
+        min-width: 28px;
+        min-height: 28px;
+    }
+    
+    .mode-icon-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .mode-icon-btn[data-mode="lab"] {
+        display: none;
     }
 }
