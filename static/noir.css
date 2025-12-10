@@ -11573,12 +11573,12 @@ body, html {
 
 .messages:not(:empty) ~ .input-area {
     position: fixed;
-    bottom: 0;
+    bottom: 1%;
     bottom: env(safe-area-inset-bottom, 0);
 }
 
 @supports (-webkit-touch-callout: none) {
     .messages:not(:empty) ~ .input-area {
-        bottom: max(0px, env(safe-area-inset-bottom));
+       bottom: max(20px, calc(env(safe-area-inset-bottom) + 20px));
     }
 }
