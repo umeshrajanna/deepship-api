@@ -11347,14 +11347,14 @@ body.logged-in .use-cases-icon-btn {
          position: sticky;
           bottom: 0;
         margin-top: auto; /* Push to bottom */
-         padding-bottom: env(safe-area-inset-bottom, 10px);
+         padding-bottom: env(safe-area-inset-bottom, 10%);
     }
 
        body {
         display: flex;
         flex-direction: column;
         min-height: 100vh;
-        min-height: -webkit-fill-available; /* iOS fix */
+        /* min-height: -webkit-fill-available;   */
     }
 }
 
