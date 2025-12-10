@@ -11575,7 +11575,7 @@ body, html {
     }
 }
 
-.input-area {
+.messages:not(:empty) ~ .input-area {
     position: fixed;
     bottom: 0;
     bottom: env(safe-area-inset-bottom, 0);
