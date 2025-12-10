@@ -11575,4 +11575,14 @@ body, html {
     }
 }
 
- 
+.input-area {
+    position: fixed;
+    bottom: 0;
+    bottom: env(safe-area-inset-bottom, 0);
+}
+
+@supports (-webkit-touch-callout: none) {
+    .input-area {
+        bottom: max(0px, env(safe-area-inset-bottom));
+    }
+}
