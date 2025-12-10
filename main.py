@@ -3785,5 +3785,5 @@ async def root():
 #     # uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
-import uvicorn
-uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
+# import uvicorn
+# uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
