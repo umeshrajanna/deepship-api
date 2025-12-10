@@ -11337,25 +11337,24 @@ body.logged-in .use-cases-icon-btn {
  
     box-sizing: border-box; /* Important! */
     min-height: 100px;
- 
+    
 }
 
 /* Tablet - both scale together */
 @media (min-width: 300px) {
     .input-area {
         width: 70%;
-         /* position: sticky; */
-        bottom: 0;
-        
+         position: sticky;
+          bottom: 0;
         margin-top: auto; /* Push to bottom */
-         /* padding-bottom: env(safe-area-inset-bottom, 10%); */
+         padding-bottom: env(safe-area-inset-bottom, 10px);
     }
 
        body {
         display: flex;
         flex-direction: column;
         min-height: 100vh;
-        /* min-height: -webkit-fill-available;   */
+        min-height: -webkit-fill-available; /* iOS fix */
     }
 }
 
