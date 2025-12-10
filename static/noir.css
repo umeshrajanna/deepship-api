@@ -11337,7 +11337,7 @@ body.logged-in .use-cases-icon-btn {
  
     box-sizing: border-box; /* Important! */
     min-height: 100px;
-    
+    margin-bottom: 10%;
 }
 
 /* Tablet - both scale together */
