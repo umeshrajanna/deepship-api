@@ -9067,9 +9067,10 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 .login-panel {
     position: fixed;
     top: 0;
-    right: -450px;
-    width: 450px;
+    /* right: -450px; */
+    width: 240px;
     height: 100vh;
+    left: 60px;
     /* background: linear-gradient(135deg, #174236 0%, #0f2a21 100%); */
     background: #F6F5EF;
     z-index: 1000;
@@ -11355,7 +11356,7 @@ body.logged-in .use-cases-icon-btn {
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 1px solid blue;
+ 
     box-sizing: border-box; /* Important! */
     min-height: auto;
 }
@@ -11397,17 +11398,17 @@ body.logged-in .use-cases-icon-btn {
     margin-left: 60px; /* For sidebar */
 }
 
-/* Mobile - remove margin when sidebar is likely hidden */
-@media (max-width: 767px) {
+ 
+/* @media (max-width: 767px) {
     .input-wrapper {
-        margin-left: 0; /* Remove sidebar margin on mobile */
+        margin-left: 0; 
     }
     
-    /* Adjust when panel is visible */
+ 
     body .conversations-panel:not(.collapsed) ~ * .input-wrapper {
-        margin-left: 0; /* No margin, panel overlays */
+        margin-left: 0; 
     }
-}
+} */
 
 #message-input {
     flex: 1 !important;
@@ -11485,13 +11486,18 @@ body.logged-in .use-cases-icon-btn {
     }
 }
 
-@media (max-width: 480px) {
+body, html {
+    min-width: 300px; /* Prevent anything below 300px */
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+}
+/* Extra small screens - 300px to 480px */
+@media (min-width: 300px) and (max-width: 480px) {
     .input-wrapper::before,
     .input-wrapper[data-mode-label]::before {
-        font-size: 9px;
-        padding: 3px 6px;
-        left: 8px;
-        bottom: 8px;
+        font-size: 8px;
+        padding: 2px 4px;
+        left: 4px;
+        bottom: 6px;
         letter-spacing: 0.1px;
     }
     
@@ -11501,17 +11507,31 @@ body.logged-in .use-cases-icon-btn {
     }
     
     .mode-icon-btn {
-        padding: 4px;
-        min-width: 28px;
-        min-height: 28px;
+        padding: 3px;
+        min-width: 24px;
+        min-height: 24px;
     }
     
     .mode-icon-btn svg {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
     }
     
-    .mode-icon-btn[data-mode="lab"] {
+    /* Hide less important buttons */
+    .mode-icon-btn[data-mode="lab"],
+    .mode-icon-btn[data-mode="deep"] {
         display: none;
+    }
+}
+
+/* Very small screens - at exactly 300px */
+@media (max-width: 360px) {
+    .input-area {
+        width: 98%; /* Almost full width */
+    }
+    
+    .messages {
+        width: 98%;
+        padding: 4px;
     }
 }
