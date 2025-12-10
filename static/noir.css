@@ -11337,12 +11337,15 @@ body.logged-in .use-cases-icon-btn {
  
     box-sizing: border-box; /* Important! */
     min-height: 100px;
+     padding-bottom: env(safe-area-inset-bottom, 10px); 
 }
 
 /* Tablet - both scale together */
 @media (min-width: 300px) {
     .input-area {
         width: 70%;
+        padding-bottom: max(env(safe-area-inset-bottom), 10px); 
+        bottom: 0;
     }
 }
 
@@ -11387,7 +11390,7 @@ body.logged-in .use-cases-icon-btn {
     font-size: 14px;
     resize: none;
  
-    border-radius: 12px;
+    border-radius: 12px 12px 0 0; 
     box-sizing: border-box;
     overflow-y: auto;
     overflow-x: hidden;
