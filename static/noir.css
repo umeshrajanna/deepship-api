@@ -11582,7 +11582,7 @@ body, html {
 }
 
 @supports (-webkit-touch-callout: none) {
-    .input-area {
+    .messages:not(:empty) ~ .input-area {
         bottom: max(0px, env(safe-area-inset-bottom));
     }
 }
