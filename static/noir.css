@@ -11337,17 +11337,18 @@ body.logged-in .use-cases-icon-btn {
  
     box-sizing: border-box; /* Important! */
     min-height: 100px;
-    margin-bottom: 10%;
+ 
 }
 
 /* Tablet - both scale together */
 @media (min-width: 300px) {
     .input-area {
         width: 70%;
-         position: sticky;
-          bottom: 0;
+         /* position: sticky; */
+        bottom: 0;
+        
         margin-top: auto; /* Push to bottom */
-         padding-bottom: env(safe-area-inset-bottom, 10%);
+         /* padding-bottom: env(safe-area-inset-bottom, 10%); */
     }
 
        body {
@@ -11584,5 +11585,21 @@ body, html {
     .send-icon-btn svg {
         width: 14px;
         height: 14px;
+    }
+}
+
+.input-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Add this for mobile browsers */
+    bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* For iOS specifically */
+@supports (-webkit-touch-callout: none) {
+    .input-area {
+        bottom: max(0px, env(safe-area-inset-bottom));
     }
 }
