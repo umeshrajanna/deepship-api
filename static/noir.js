@@ -6983,16 +6983,18 @@ document.addEventListener('DOMContentLoaded', function() {
 const messageInput = document.getElementById('message-input');
  
 messageInput.addEventListener('input', function() {
+ 
     // Reset height to recalculate
     this.style.height = '60px'; // Changed from 24px
     this.style.overflowY = 'hidden';
     
     // Set new height based on content, capped at max-height
-    const newHeight = Math.min(this.scrollHeight, 250);
+    const newHeight = Math.min(this.scrollHeight, 100);
     this.style.height = newHeight + 'px';
     
     // Show scrollbar if max height reached
-    if (this.scrollHeight > 250) {
+    if (this.scrollHeight > 100) {
+ 
         this.style.overflowY = 'auto';
     }
 });

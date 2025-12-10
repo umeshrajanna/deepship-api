@@ -9255,28 +9255,6 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
  
 } */
 
-#message-input {
-    width: 80%;
-    min-height: 60px; /* Start with ~1-2 lines */
-    max-height: 250px; /* Max ~5-6 lines before scroll */
-    padding: 12px 12px 12px 0 !important;
-    background: #ffffff;;
-    color: black;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 14px;
-    resize: none;
-    border-radius: 20px !important;
-    box-sizing: border-box;
-    overflow-y: hidden;
-    overflow-x: hidden;
-    word-wrap: break-word;
-    line-height: 1.5;
-    outline: none;
-    scrollbar-width: thin;
-    -ms-overflow-style: auto;
- 
-}
- 
 #message-input::-webkit-scrollbar {
     width: 8px;
 }
@@ -11355,10 +11333,10 @@ body.logged-in .use-cases-icon-btn {
     margin: 0 auto;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
  
     box-sizing: border-box; /* Important! */
-    min-height: auto;
+    min-height: 100px;
 }
 
 /* Tablet - both scale together */
@@ -11379,42 +11357,47 @@ body.logged-in .use-cases-icon-btn {
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     box-sizing: border-box;
 }
 
 .input-wrapper {
-   
     width: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
     flex-direction: column;
-    position: relative !important;
-    min-height: 100px;
-    bottom: 5px;
+    align-items: flex-end;  
+    gap: 26px;
+    position: relative;
     border-radius: 12px;
-    box-sizing: border-box;
-    margin-left: 60px; /* For sidebar */
+   
+    /* margin-left: 60px; */
+    padding: 8px;
+     min-height: fit-content; 
 }
-
- 
-/* @media (max-width: 767px) {
-    .input-wrapper {
-        margin-left: 0; 
-    }
-    
- 
-    body .conversations-panel:not(.collapsed) ~ * .input-wrapper {
-        margin-left: 0; 
-    }
-} */
 
 #message-input {
-    flex: 1 !important;
-    min-width: 0;
+    width: 90%;
+    align-self: flex-start; 
+    min-height: 60px; /* Start with ~2 lines */
+    max-height: 100px;
+  
+    background: transparent;
+    color: black;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    resize: none;
+ 
+    border-radius: 12px;
     box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    line-height: 1.5;
+    outline: none;
+    scrollbar-width: thin;
+    height: auto; /* Important: allow height to be controlled by JS */
 }
+
 
 
 @media (max-width: 768px) {
@@ -11452,6 +11435,11 @@ body.logged-in .use-cases-icon-btn {
     width: 90%;
     margin: 0 auto;
     box-sizing: border-box;
+    
+}
+ 
+.chat-area
+{
     padding-left: 60px;
 }
 
@@ -11533,5 +11521,56 @@ body, html {
     .messages {
         width: 98%;
         padding: 4px;
+    }
+}
+ 
+ 
+
+.mode-icon-btn {
+    padding: 3px;
+    min-width: 24px;
+    min-height: 24px;
+    border-radius: 4px;
+}
+
+.mode-icon-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.send-icon-btn {
+    padding: 4px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 4px;
+}
+
+.send-icon-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Mobile - extra small icons */
+@media (max-width: 480px) {
+    .mode-icon-btn {
+        padding: 2px;
+        min-width: 24px;
+        min-height: 24px;
+    }
+    
+    .mode-icon-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .send-icon-btn {
+        padding: 4px;
+        min-width: 28px;
+        min-height: 28px;
+    }
+    
+    .send-icon-btn svg {
+        width: 14px;
+        height: 14px;
     }
 }
