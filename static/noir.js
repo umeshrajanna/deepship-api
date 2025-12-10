@@ -6989,11 +6989,11 @@ messageInput.addEventListener('input', function() {
     this.style.overflowY = 'hidden';
     
     // Set new height based on content, capped at max-height
-    const newHeight = Math.min(this.scrollHeight, 100);
+    const newHeight = Math.min(this.scrollHeight, 150);
     this.style.height = newHeight + 'px';
     
     // Show scrollbar if max height reached
-    if (this.scrollHeight > 100) {
+    if (this.scrollHeight > 150) {
  
         this.style.overflowY = 'auto';
     }

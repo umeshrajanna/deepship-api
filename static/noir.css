@@ -10322,7 +10322,7 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 body:not(.logged-in) .mode-icon-btn[data-mode="deep"]::after,
 body:not(.logged-in) .mode-icon-btn[data-mode="lab"]::after,
 body:not(.logged-in) .mode-icon-btn[data-mode="voice"]::after {
-    content: '🔒';
+    /* content: '🔒'; */
     position: absolute;
     top: 4px;
     right: 4px;
@@ -11501,15 +11501,11 @@ body, html {
     }
     
     .mode-icon-btn svg {
-        width: 12px;
-        height: 12px;
+        width: 18px;
+        height: 18px;
     }
     
-    /* Hide less important buttons */
-    .mode-icon-btn[data-mode="lab"],
-    .mode-icon-btn[data-mode="deep"] {
-        display: none;
-    }
+    
 }
 
 /* Very small screens - at exactly 300px */
@@ -11534,8 +11530,8 @@ body, html {
 }
 
 .mode-icon-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 18px !important;
+    height: 18px !important;
 }
 
 .send-icon-btn {
@@ -11559,8 +11555,8 @@ body, html {
     }
     
     .mode-icon-btn svg {
-        width: 12px;
-        height: 12px;
+        width: 18px;
+        height: 18px;
     }
     
     .send-icon-btn {
