@@ -1634,7 +1634,7 @@ body.logged-in .panel-section:has(.conversations) {
     position: relative; 
     justify-content: center;
     align-items: center;
-    
+    border:1px solid blue
 }
  
 
@@ -5147,55 +5147,6 @@ body {
 }   
 
 /* App Version Selector Dropdown */
-.app-version-selector {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    margin-left: 12px;
-}
-
-.version-dropdown {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background: rgba(212, 165, 116, 0.1);
-    border: 1px solid rgba(212, 165, 116, 0.3);
-    border-radius: 6px;
-    padding: 6px 32px 6px 12px;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    color: #d4a574;
-    cursor: pointer;
-    transition: all 0.2s;
-    outline: none;
-}
-
-.version-dropdown:hover {
-    background: rgba(212, 165, 116, 0.15);
-    border-color: rgba(212, 165, 116, 0.5);
-}
-
-.version-dropdown:focus {
-    background: rgba(212, 165, 116, 0.2);
-    border-color: #d4a574;
-    box-shadow: 0 0 0 2px rgba(212, 165, 116, 0.1);
-}
-
-.version-dropdown option {
-    background: #2a2a2a;
-    color: #ffffff;
-    padding: 8px;
-}
-
-.dropdown-arrow {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    color: #d4a574;
-}
 
 /* App Preview Container */
 .app-preview-container {
@@ -10108,613 +10059,6 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     margin: 4px 0;
 }
 
-/* Responsive */
-/* @media (max-width: 900px) {
-    .premium-packages {
-        flex-wrap: wrap;
-    }
-    
-    .premium-package.popular {
-        transform: scale(1);
-    }
-    
-    .premium-package.popular:hover {
-        transform: translateY(-3px);
-    }
-} */
-
-/* @media (max-width: 600px) {
-    .premium-popup-modal {
-        padding: 21px 14px;
-    }
-    
-    .premium-packages {
-        flex-direction: column;
-    }
-    
-    .premium-package {
-        max-width: 100%;
-    }
-} */
-
-
-/* ===================================================
-   MOBILE RESPONSIVE LAYOUT - ADD TO END OF CSS FILE
-   =================================================== */
-
-/* ============================================
-   MOBILE - KEEP ICON SIDEBAR VISIBLE
-   ============================================ */
-/* @media (max-width: 1024px) { */
-    
-    /* Icon sidebar - always visible */
-    /* .conversations-panel {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 60px !important;
-        min-width: 60px !important;
-        max-width: 600px !important;
-        height: 100vh !important;
-        z-index: 100 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        background: #F2F1E6 !important;
-        border-right: 1px solid #E8E6DC !important;
-    } */
-    
-    /* Mobile Panel - Must be at end of file */
-/* @media (max-width: 1024px) {
-    .conversations-panel {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 85vw !important;
-        max-width: 350px !important;
-        height: 100vh !important;
-        z-index: 100000 !important;
- 
-        transition: transform 0.3s ease !important;
-    } */
-     
-    /* Hide text content in sidebar */
-    /* .conversations-panel .panel-logo {
-        display: none !important;
-    }
-    
-    .conversations-panel .panel-status {
-        display: none !important;
-    }
-    
-    .conversations-panel .section-title {
-        display: none !important;
-    }
-    
-    .conversations-panel .auth-user-info {
-        display: none !important;
-    }
-    
-    .conversations-panel .auth-logged-out {
-        display: none !important;
-    }
-    
-    .conversations-panel #conversations {
-        display: none !important;
-    }
-    
-    .conversations-panel .conversation-filter {
-        display: none !important;
-    }
-    
-    .conversations-panel .new-conversation-btn {
-        display: none !important;
-    }
-    
-    .conversations-panel .upgrade-section {
-        display: none !important;
-    } */
-    
-    /* Show only icon buttons */
-    /* .conversations-icon-btn,
-    .new-chat-icon-btn,
-    .news-icon-btn,
-    .login-icon-btn,
-    .logout-icon-btn,
-    .premium-icon-btn,
-    .cloud-icon-btn,
-    .use-cases-icon-btn {
-        display: flex !important;
-        width: 44px !important;
-        height: 44px !important;
-        margin-bottom: 12px !important;
-    } */
-    
-    /* Panel sections - center icons */
-    /* .conversations-panel .panel-section {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        padding: 12px 8px !important;
-        border-bottom: none !important;
-    } */
-    
-    /* Chat area - leave space for icon bar */
-    /* .chat-area {
-        margin-left: 60px !important;
-        width: calc(100vw - 60px) !important;
-    } */
-    
-    /* Control panel - hidden, slides in from right */
-    /* .control-panel {
-        position: fixed !important;
-        right: 0 !important;
-        top: 0 !important;
-        width: 85vw !important;
-        max-width: 320px !important;
-        height: 100vh !important;
-        transform: translateX(100%) !important;
-        transition: transform 0.3s ease !important;
-        z-index: 10000 !important;
-        display: none !important;
-    } */
-    
-    /* .control-panel.mobile-active {
-        transform: translateX(0) !important;
-        display: flex !important;
-    } */
-    
-    /* ============================================
-       OVERLAY PANELS - Hidden, slide in when clicked
-       ============================================ */
-    
-    /* Conversations Selection Panel */
-    /* .conversations-selection-panel {
-        position: fixed !important;
-        left: 60px !important;
-        top: 0 !important;
-        width: calc(100vw - 60px) !important;
-        height: 100vh !important;
-        z-index: 10001 !important;
-    } */
-    
-    /* News Panel */
-    /* .news-selection-panel {
-        position: fixed !important;
-        left: 60px !important;
-        top: 0 !important;
-        width: calc(100vw - 60px) !important;
-        height: 100vh !important;
-        z-index: 10001 !important;
-    } */
-    
-    /* .news-overlay {
-        left: 60px !important;
-        width: calc(100vw - 60px) !important;
-    } */
-    
-    /* Login Panel */
-    /* .login-panel {
-        position: fixed !important;
-        right: 0 !important;
-        top: 0 !important;
-        width: calc(100vw - 60px) !important;
-        height: 100vh !important;
-        z-index: 10001 !important;
-    } */
-    
-    /* Use Cases Panel */
-    /* .use-cases-selection-panel {
-        position: fixed !important;
-        left: 60px !important;
-        top: 0 !important;
-        width: calc(100vw - 60px) !important;
-        height: 100vh !important;
-        z-index: 10001 !important;
-    } */
-    
-    /* .use-cases-overlay {
-        left: 60px !important;
-        width: calc(100vw - 60px) !important;
-    } */
-    
-    /* Cloud Wizard */
-    /* .cloud-wizard-panel {
-        position: fixed !important;
-        left: 60px !important;
-        top: 0 !important;
-        width: calc(100vw - 60px) !important;
-        height: 100vh !important;
-        z-index: 10001 !important;
-    } */
-    
-    /* Premium Popup */
-    /* .premium-popup-modal {
-        width: calc(100vw - 60px) !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        left: 60px !important;
-        border-radius: 0 !important;
-    } */
-    
-    /* Backdrops - cover area after icon bar */
-    /* .news-panel-backdrop,
-    .login-panel-backdrop,
-    .conversations-panel-backdrop,
-    .use-cases-panel-backdrop,
-    .cloud-wizard-backdrop,
-    .premium-popup-backdrop {
-        left: 60px !important;
-        width: calc(100vw - 60px) !important;
-    } */
-    
-    /* ============================================
-       INPUT AND MESSAGES - Full width
-       ============================================ */
-    
-    /* .input-container {
-        width: 95% !important;
-    } */
-    
-    /* .messages {
-        width: 100% !important;
-        padding: 16px 12px !important;
-    } */
-    
-    /* #message-input {
-        font-size: 16px !important;
-        padding: 12px 60px 12px 12px !important;
-    } */
-    
-    /* ============================================
-       GRIDS - Single column
-       ============================================ */
-/*     
-    .sources-grid,
-    .query-sources-grid,
-    .assets-container,
-    .news-grid,
-    .use-cases-grid,
-    .use-cases-categories,
-    .premium-packages {
-        grid-template-columns: 1fr !important;
-    } */
-/* } */
-
-/* ============================================
-   VERY SMALL MOBILE - Smaller icon bar
-   ============================================ */
-
-/* ============================================
-   DESKTOP - Keep original layout
-   ============================================ */
-/* @media (min-width: 769px) {
-    .conversations-panel,
-    .control-panel {
-        position: relative !important;
-        display: flex !important;
-    }
-} */
-
- /* ============================================
-   MOBILE SPLIT SCREEN MODE - FINAL VERSION
-   ============================================ */
-
-/* @media (max-width: 1024px) {
-    
-     body.split-screen-active {
-        position: fixed !important;
-        overflow: hidden !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    } 
-    body.split-screen-active .conversations-panel,
-    body.split-screen-active .control-panel,
-    body.split-screen-active .chat-area {
-        display: none !important;
-    } 
-    body.split-screen-active .split-screen-container {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        display: flex !important;
-        flex-direction: column !important;
-        z-index: 99999 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }
-     
-    body.split-screen-active .split-left {
-        position: relative !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-width: 100vw !important;
-        height: 50vh !important;
-        max-height: 50vh !important;
-        min-height: 50vh !important;
-        left: 0 !important;
-        right: 0 !important;
-        top: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        border-bottom: 2px solid #3a3a3a !important;
-        overflow: visible !important;
-        background: #1a1a1a !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-        z-index: 1 !important;
-    }
-     
-    body.split-screen-active .split-left > * {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-     
-    body.split-screen-active #split-messages {
-        flex: 1 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        padding: 16px 12px 90px 12px !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-     
-    body.split-screen-active .split-right {
-        position: relative !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-width: 100vw !important;
-        height: 50vh !important;
-        max-height: 50vh !important;
-        min-height: 50vh !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        background: #1a1a1a !important;
-        overflow: hidden !important;
-        z-index: 1 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-    }
-     
-    body.split-screen-active .split-tabs {
-        z-index: 2 !important;
-    }
-     
-    body.split-screen-active .input-wrapper {
-        display: flex !important;
-        position: absolute !important;
-        bottom: 10px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 80vw !important;
-        max-width: 80vw !important;
-        min-width: 80vw !important;
-        z-index: 100 !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        margin: 0 !important;
-  
-    }
-     
-    body.split-screen-active .input-container,
-    body.split-screen-active .chat-area.empty-chat .input-container,
-    body.split-screen-active .chat-area:not(.empty-chat) .input-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        flex: 1 !important;
-        box-sizing: border-box !important;
- 
-    }
-     
-    body.split-screen-active .input-container textarea,
-    body.split-screen-active .input-container input {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    
-    body.split-screen-active .split-close {
-        display: flex !important;
-        pointer-events: auto !important;
-        z-index: 10 !important;
-        min-height: 40px !important;
-    }
-} */
- 
-
-/* @media (max-width: 1024px) {
-    
-    body:not(.split-screen-active) .input-wrapper {
-        width: 90vw !important;
-        max-width: 90vw !important;
-        margin: 0 auto !important;
-   
-    }
-    
-    body:not(.split-screen-active) .input-container,
-    body:not(.split-screen-active) .chat-area.empty-chat .input-container,
-    body:not(.split-screen-active) .chat-area:not(.empty-chat) .input-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
-    }
-    
-    body:not(.split-screen-active) .input-container textarea,
-    body:not(.split-screen-active) .input-container input {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-} */
-
-/* ============================================
-   MOBILE SPLIT SCREEN MODE
-   ============================================ */
-
-/* @media (max-width: 1024px) {
-    
- 
-    body.split-screen-active .input-wrapper {
-        display: flex !important;
-        position: absolute !important;
-        bottom: 10px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-width: 100vw !important;
-        z-index: 100 !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        margin: 0 !important;
-    }
-}
-  */
-
-/* @media (max-width: 1024px) {
-    .premium-popup-backdrop {
-        z-index: 99998 !important;
-    }
-    
-    .premium-popup-modal {
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 73% !important;
-        max-width: 73vw !important;
-        border-radius: 2.4vw !important;
-        z-index: 99999 !important;
-    }
-    
-    .premium-popup-modal.active {
-        transform: translate(-50%, -50%) scale(1) !important;
-    }
-    
-    .premium-popup-content {
-        padding: 3.2vw !important;
-    }
-    
-    .premium-popup-close-btn {
-        font-size: 4.9vw !important;
-        width: 4.9vw !important;
-        height: 4.9vw !important;
-    }
-    
-    .premium-popup-header {
-        text-align: center !important;
-        padding: 2.4vw !important;
-    }
-    
-    .premium-popup-header .premium-icon {
-        font-size: 4.9vw !important;
-        margin-bottom: 1.6vw !important;
-    }
-    
-    .premium-popup-header h2 {
-        font-size: 4vw !important;
-        margin-bottom: 1.6vw !important;
-    }
-    
-    .premium-popup-header p {
-        font-size: 2.4vw !important;
-    }
-    
-    .premium-packages {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 2.4vw !important;
-        align-items: center !important;
-    }
-    
-    .premium-package {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 2.4vw !important;
-        text-align: center !important;
-    }
-    
-    .package-badge {
-        font-size: 2vw !important;
-        padding: 1.2vw 2.4vw !important;
-        margin-bottom: 1.6vw !important;
-    }
-    
-    .package-header h3 {
-        font-size: 3.6vw !important;
-        margin-bottom: 1.6vw !important;
-    }
-    
-    .package-price {
-        margin-bottom: 1.6vw !important;
-    }
-    
-    .price-amount {
-        font-size: 4.9vw !important;
-    }
-    
-    .price-save {
-        font-size: 2vw !important;
-    }
-    
-    .package-credits {
-        font-size: 2.8vw !important;
-        margin-bottom: 2.4vw !important;
-    }
-    
-    .package-features {
-        text-align: left !important;
-        margin-bottom: 2.4vw !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 1.6vw !important;
-        align-items: flex-start !important;
-        padding-left: 3.2vw !important;
-    }
-    
-    .package-features .feature {
-        font-size: 2.4vw !important;
-    }
-    
-    .package-btn {
-        padding: 2.4vw !important;
-        font-size: 2.4vw !important;
-        border-radius: 1.6vw !important;
-        width: 100% !important;
-    }
-    
-    .premium-footer {
-        text-align: center !important;
-        padding: 2.4vw !important;
-        margin-top: 2.4vw !important;
-    }
-    
-    .premium-footer p {
-        font-size: 2.4vw !important;
-        margin-bottom: 1.6vw !important;
-    }
-} */
-
 .pasted-file-attachment {
     margin-bottom: 10px;
     padding: 10px;
@@ -10726,123 +10070,7 @@ body.logged-in .use-cases-panel,
 body.logged-in .use-cases-icon-btn {
     display: none !important;
 }
- 
-
- 
-
-/* @media (max-width: 1024px) {
- 
-    .conversations-panel .panel-logo {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
- 
-    .conversations-panel {
-        overflow-y: auto !important;
-    }
-} */
-
-/* @media (max-width: 1024px) {
-    .conversations-panel {
-        position: fixed !important;
-        top: 0 !important;
-       
-    
-        height: 100vh !important;
-        z-index: 100000 !important;
-        transition: width 0.3s ease !important;
-        overflow: hidden !important;
-    }
-    
-    .conversations-panel.mobile-open {
-        width: 85vw !important;  
-        max-width: 350px !important;
-    }
-} */
-
-/* Input wrapper - fluid scaling for ALL devices */
-/* .input-wrapper {
-    width: clamp(300px, 90%, 800px) !important;
-    margin: 0 auto !important;
-    padding: clamp(12px, 2vw, 24px) !important;
-    box-sizing: border-box !important;
-} */
-
-/* .input-container {
-    width: 100% !important;
-}
-
-.input-container textarea {
-    width: 100% !important;
-    padding: clamp(10px, 2vw, 16px) !important;
-    font-size: clamp(14px, 1vw, 16px) !important;
-    box-sizing: border-box !important;
-    min-height: 60px !important;
-    max-height: 250px !important;
-} */
-
-/* Buttons */
-/* #send-btn,
-#file-upload-btn {
-    width: clamp(40px, 8%, 50px) !important;
-    height: clamp(40px, 8%, 50px) !important;
-} */
- 
-/* 
-.input-area  {
- 
-    width: 100% !important;
-    border: 1px solid red;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
- 
-.input-area .input-container  {
- 
-    width: 95% !important;
-    border: 1px solid red;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
- 
-
-.input-area .input-wrapper  {
- 
-    width: 100% !important;
-    border: 1px solid red;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-} */
-
-
-/* .input-area {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border:1px solid blue
-}
-
-.input-area .input-container {
-    width: 95%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border:1px solid red
-}
-
-.input-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border:1px solid yellow
-} */
-
+  
 
 .input-area {
     width: 240px ; 
@@ -10855,21 +10083,7 @@ body.logged-in .use-cases-icon-btn {
     box-sizing: border-box; 
     min-height: 100px;
 }
-
-/* Tablet - both scale together */
-/* @media (min-width: 300px) {
-    .input-area {
-        width: 70%;
-    }
-} */
-
-/* Desktop - both scale together */
-/* @media (min-width: 1200px) {
-    .input-area {
-        width: 50%;
-    }
-} */
-
+ 
 .input-container {
     width: 100%;
     display: flex;
@@ -10890,7 +10104,7 @@ body.logged-in .use-cases-icon-btn {
     gap: 26px;
     position: relative;
     border-radius: 12px;
-   
+    margin-bottom: 10px;
     margin-left: 70px;
     padding: 8px;
      min-height: fit-content; 
@@ -10918,173 +10132,8 @@ body.logged-in .use-cases-icon-btn {
     scrollbar-width: thin;
     height: auto; 
 }
-
-
-
-/* @media (max-width: 768px) {
-    .messages {
-        padding: 16px;
-        width: 70%;
-    }
-} */
-
-/* @media (max-width: 480px) {
-    .messages {
-        padding: 8px; 
-        gap: 16px; 
-    }
-} */
-
-/* 
-@media (min-width: 1200px) {
-    .messages {
-        width: 50%;
-        padding: 32px;
-    }
-}
-
-.messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    align-items: center;
-    width: 90%;
-    margin: 0 auto;
-    box-sizing: border-box;
-    
-}
- 
-.chat-area
-{
-    padding-left: 60px;
-}
-
-.messages > * {
-    width: 100%;
-    max-width: 100%;
-} */
-
-/* @media (min-width: 768px) {
-    .messages {
-        width: 70%;
-    }
-} */
-
-/* @media (min-width: 1200px) {
-    .messages {
-        width: 50%;
-    }
-} */
-
-/* @media (max-width: 768px) {
-    .input-wrapper::before,
-    .input-wrapper[data-mode-label]::before {
-        font-size: 10px;
-        padding: 4px 8px;
-        left: 12px;
-        bottom: 10px;
-        letter-spacing: 0.2px;
-    }
-} */
-
-/* body, html {
-    min-width: 300px;
-    overflow-x: auto;
-} */
-
-/* @media (min-width: 300px) and (max-width: 480px) {
-    .input-wrapper::before,
-    .input-wrapper[data-mode-label]::before {
-        font-size: 8px;
-        padding: 2px 4px;
-        left: 4px;
-        bottom: 6px;
-        letter-spacing: 0.1px;
-    }
-    
-    .input-mode-icons {
-        gap: 1px;
-        padding: 2px;
-    }
-    
-    .mode-icon-btn {
-        padding: 3px;
-        min-width: 24px;
-        min-height: 24px;
-    }
-    
-    .mode-icon-btn svg {
-        width: 18px;
-        height: 18px;
-    }
-    
-    
-} */
-/* 
-@media (max-width: 360px) {
-    .input-area {
-        width: 98%; 
-    }
-    
-    .messages {
-        width: 98%;
-        padding: 4px;
-    }
-} */
  
  
-
-/* .mode-icon-btn {
-    padding: 3px;
-    min-width: 24px;
-    min-height: 24px;
-    border-radius: 4px;
-}
-
-.mode-icon-btn svg {
-    width: 18px !important;
-    height: 18px !important;
-}
-
-.send-icon-btn {
-    padding: 4px;
-    min-width: 28px;
-    min-height: 28px;
-    border-radius: 4px;
-}
-
-.send-icon-btn svg {
-    width: 14px;
-    height: 14px;
-} */
-
-/* @media (max-width: 480px) {
-    .mode-icon-btn {
-        padding: 2px;
-        min-width: 24px;
-        min-height: 24px;
-    }
-    
-    .mode-icon-btn svg {
-        width: 18px;
-        height: 18px;
-    }
-    
-    .send-icon-btn {
-        padding: 4px;
-        min-width: 28px;
-        min-height: 28px;
-    }
-    
-    .send-icon-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-} */
-
 .mode-icon-btn
 {
     min-width:20px !important;
@@ -11130,10 +10179,8 @@ body.logged-in .use-cases-icon-btn {
        bottom: max(20px, calc(env(safe-area-inset-bottom) + 20px));
     }
 }
- 
 
   @media (min-width: 300px) and (max-width: 699px) {
-  
     .messages 
     {
         margin-left: 60px !important;
@@ -11141,15 +10188,12 @@ body.logged-in .use-cases-icon-btn {
         min-width: 80% !important;
         max-width: 80%!important;
         overflow-y: auto !important;
- 
         margin-bottom: 200px !important;
     }
 
-   } 
-
+} 
 
   @media (min-width: 700px) {
-  
     .messages 
     {
         margin-left: 60px !important;
@@ -11157,12 +10201,8 @@ body.logged-in .use-cases-icon-btn {
         min-width: 540px !important;
         max-width: 640px!important;
         overflow-y: auto !important;
- 
         margin-bottom: 200px !important;
-        
-    }
-
- 
+    } 
  }
  
     .use-cases-grid {
@@ -11187,6 +10227,365 @@ body.logged-in .use-cases-icon-btn {
 
 
 /* =========================================SPLIT SCREEN =========================================== */
- 
+/* =========================================SPLIT SCREEN =========================================== */
 
+@media(max-width:1200px)
+{
+    .split-screen-container
+    {
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 60px);
+        gap:10px;
+    }
+    
+    .split-left .input-area
+    {
+        display: none !important;
+    }
+       
+    .split-right .split-tabs {
+        flex: 0 0 auto;
+        height: 48px;
+        display: flex !important;
+        background: #f7f7f8;
+        border-bottom: 1px solid #E8E6DC;
+    }
+
+    #split-left-div
+    {
+        display: none !important;
+    }
+
+      .split-right.active ~ .split-left,
+    .split-screen-container:has(.split-right.active) .split-left {
+        display: none !important;
+    }
+
+    .split-right .split-tab-content {
+        position: absolute !important;
+        top:100px !important;
+        left: 0 !important;
+        right: 0 !important;
+        /* bottom: 140px !important;  */
+        width: calc(100% -60px) !important;
+        height: calc(90%) !important;
+        overflow: hidden;
+        display: block !important;
+        margin-left: 60px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        border:2px solid red
+    }
+    
+    /* Make iframe fill its container completely */
+    .split-right .split-tab-content iframe,
+    .split-right #split-preview-iframe {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        border: none;
+        display: block;
+    }
+
+    .split-left .messages {
+    margin-left: 0 !important;
+    padding-left: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+}
+
+ 
+}
+
+
+@media(min-width:1200px)
+{
+    .split-screen-container
+    {
+        display: flex;
+        flex-direction: row;
+        margin-left: 60px;  /* Start from conversations panel edge */
+        width: calc(100% - 60px);  /* Full width minus panel */
+        min-height: 100vh;
+    }
+
+    .split-left
+    {
+        margin-bottom: 200px;
+        flex: 1;  /* Take up half the space */
+        overflow-y: auto;
+         
+    }
+     .input-wrapper {
+        min-width: 540px !important;
+        max-width: 600px;
+    }
+    
+    .input-area {
+        min-width: 540px;
+        max-width: 600px;
+    }
+    
+    .split-right
+    {
+        flex: 1;  /* Take up half the space */
+        overflow-y: auto;
+    }
+
+    
+    .split-tabs {
+        flex-direction: row !important;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 12px 16px;
+        background: #F2F1E6 !important;
+        flex-shrink: 0;
+        align-items: flex-start;
+    }
+}
+
+@media (min-width: 300px) and (max-width: 699px) {
+    .messages 
+    {
+        margin-left: 60px !important;
+        width: 80% !important;
+        min-width: 80% !important;
+        max-width: 80%!important;
+        overflow-y: auto !important;
+        margin-bottom: 200px !important;
+    }
+
+    .split-tabs {
+        flex-direction: column !important;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 12px 16px;
+        background: #F2F1E6 !important;
+        flex-shrink: 0;
+        align-items: flex-start;
+    }
+
+
+} 
+
+  @media (min-width: 700px) {
+    .messages 
+    {
+        margin-left: 60px !important;
+        width: 640px !important;
+        min-width: 540px !important;
+        max-width: 640px!important;
+        overflow-y: auto !important;
+        margin-bottom: 200px !important;
+    } 
+  }
+    /* .split-tabs {
+        flex-direction: row;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 12px 16px;
+        background: #F2F1E6 !important;
+        flex-shrink: 0;
+        align-items: flex-start;
+ }
+
+
+
+.split-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #999;
+    cursor: pointer;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.split-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #d4a574;
+}
+
+.split-tab.active {
+    background: rgba(212, 165, 116, 0.1);
+    border-color: rgba(212, 165, 116, 0.3);
+    color: #d4a574;
+}
+
+.split-tab svg {
+    width: 14px;
+    height: 14px;
+} */
+
+/* .split-close {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.split-close:hover {
+    background: rgba(255, 68, 68, 0.1);
+    border-color: #ff4444;
+    color: #ff4444;
+} */
+
+.split-close {
+    width: 42px;   /* ← Change from 20px */
+    height: 42px;  /* ← Change from 20px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0; /* ← Add this to prevent shrinking */
+}
+
+/* Keep SVG icon at 20px */
+.split-close svg {
+    width: 20px;
+    height: 20px;
+}
+.split-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(212, 165, 116, 0.3);
+    transform: translateY(-2px);
+}
+
+.split-close:active {
+    transform: translateY(0);
+}
+
+
+.preview {
+    width: 72px;   /* ← Change from 20px */
+    height: 42px;  /* ← Change from 20px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0; /* ← Add this to prevent shrinking */
+}
+
+/* Keep SVG icon at 20px */
+.preview svg {
+    width: 20px;
+    height: 20px;
+}
+.preview:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(212, 165, 116, 0.3);
+    transform: translateY(-2px);
+}
+
+.preview:active {
+    transform: translateY(0);
+}
+
+
+.code {
+    width: 72px;   /* ← Change from 20px */
+    height: 42px;  /* ← Change from 20px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0; /* ← Add this to prevent shrinking */
+}
+
+/* Keep SVG icon at 20px */
+.code svg {
+    width: 20px;
+    height: 20px;
+}
+.code:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(212, 165, 116, 0.3);
+    transform: translateY(-2px);
+}
+
+.code:active {
+    transform: translateY(0);
+}
 /* =========================================END SPLIT SCREEN ======================================= */
+/* =========================================END SPLIT SCREEN ======================================= */
+
+.app-version-selector {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.version-dropdown {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: #FBF6EF !important;
+    border: 1px solid #E8DFD0;
+    border-radius: 6px;
+    padding: 6px 32px 6px 12px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8B7355;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    height: 30px !important;
+}
+
+.version-dropdown:hover {
+    background: #F5EFE5;
+    border-color: #D4C4B0;
+}
+
+.version-dropdown:focus {
+    border-color: #8B7355;
+    box-shadow: 0 0 0 2px rgba(139, 115, 85, 0.1);
+}
+
+.version-dropdown option {
+    background: #FBF6EF;
+    color: #8B7355;
+    padding: 10px;
+}
+
+.dropdown-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #8B7355;
+}
