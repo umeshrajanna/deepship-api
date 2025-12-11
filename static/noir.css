@@ -3162,15 +3162,15 @@ overflow-y: hidden;  /* No vertical scroll */
 
 /* Input mode icons container */
 .input-mode-icons {
-    position: absolute; /* Un-comment this! */
-    right: 50px; /* Changed from 55px to 0 */
+    position: absolute; 
+    right: 40px; 
     bottom: 2px;
     display: flex;
     gap: 4px;
     align-items: center;
     z-index: 100;
     pointer-events: all;
-    background: #1a1a1a;
+    /* background: #1a1a1a; */
     padding: 4px;
     border-radius: 4px;
     justify-content: space-between;
@@ -11372,7 +11372,9 @@ body.logged-in .use-cases-icon-btn {
 
 .input-wrapper {
     width: 100%;
-    min-width: 240px;
+    margin-left: 10px;
+    margin-right: 10px;
+    min-width: 220px;
     max-width: 600px;
     display: flex;
     flex-direction: column;
@@ -11381,7 +11383,7 @@ body.logged-in .use-cases-icon-btn {
     position: relative;
     border-radius: 12px;
    
-    margin-left: 60px;
+    margin-left: 70px;
     padding: 8px;
      min-height: fit-content; 
 }
@@ -11574,6 +11576,26 @@ body.logged-in .use-cases-icon-btn {
         height: 14px;
     }
 } */
+
+.mode-icon-btn
+{
+    min-width:20px !important;
+    max-width:30px !important;
+    width: 100% !important;
+
+    height: auto !important;
+}
+
+
+.mode-icon-btn svg
+{
+     min-width:20px !important;
+    max-width:30px !important;
+    width: 100% !important;
+
+    height: auto !important;
+}
+
 
 #send-btn
 {
