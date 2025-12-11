@@ -10041,12 +10041,12 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 }
 
 /* Use Case Cards Grid */
-.use-cases-grid {
+/* .use-cases-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 20px;
     background: #F6F5EF; 
-}
+} */
 
 .use-case-card {
     background: rgba(255, 255, 255, 0.03);
@@ -10058,6 +10058,9 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    min-width: 200px;
+    max-width: 200px;
 }
 
 .use-case-card:hover {
@@ -11628,12 +11631,11 @@ body.logged-in .use-cases-icon-btn {
         min-width: 80% !important;
         max-width: 80%!important;
         overflow-y: auto !important;
-        /* height: 80%;
-        min-height: 80% !important;
-        max-height: 80% !important; */
+ 
         margin-bottom: 200px !important;
     }
- } 
+
+   } 
 
 
   @media (min-width: 700px) {
@@ -11645,10 +11647,30 @@ body.logged-in .use-cases-icon-btn {
         min-width: 540px !important;
         max-width: 640px!important;
         overflow-y: auto !important;
-        /* height: 70%;
-        min-height: 70% !important;
-        max-height: 70% !important; */
+ 
         margin-bottom: 200px !important;
-        /* position: absolute; */
+        
     }
- } 
+
+ 
+ }
+ 
+    .use-cases-grid {
+    display: flex;
+    flex-wrap: wrap;  /* Allow items to wrap to next row */
+    gap: 20px;
+    background: #F6F5EF;
+    width: 100% !important;
+    min-width: 260px !important;
+    max-width: 2000px !important;
+    overflow-y: auto !important;
+    margin-bottom: 200px !important;
+}
+
+.use-cases-grid > * {
+    flex: 1 1 350px;  /* Grow, shrink, base width of 350px */
+    min-width: 200px;
+    max-width: 200px;
+    width: 100%;
+}
+ 
