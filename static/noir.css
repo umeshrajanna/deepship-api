@@ -9842,7 +9842,9 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     position: fixed;
     left: 60px;
     top: 0;
-    width: 400px;
+    min-width: 240px;
+    max-width: 250px;
+    width: 100%;
     height: 100vh;
     background: #1a1a1a;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -9860,7 +9862,9 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 
 /* Panel Header */
 .use-cases-panel-header {
-    padding: 24px;
+    min-width: 240px;
+    max-width: 300px;
+    width: 100%;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: space-between;
@@ -9897,6 +9901,9 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 
 /* Panel Content */
 .use-cases-panel-content {
+    min-width: 200px;
+    max-width: 300px;
+    width: 100%;
     flex: 1;
     overflow-y: auto;
     padding: 20px;
@@ -9905,8 +9912,11 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 
 /* Category Grid */
 .use-cases-categories {
+    min-width: 100px;
+    max-width: 250px;
+    width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    /* grid-template-columns: repeat(2, 1fr); */
     gap: 12px;
     margin-bottom: 20px;
 }
@@ -11265,11 +11275,11 @@ body.logged-in .use-cases-icon-btn {
 } */
 
 /* Buttons */
-#send-btn,
+/* #send-btn,
 #file-upload-btn {
     width: clamp(40px, 8%, 50px) !important;
     height: clamp(40px, 8%, 50px) !important;
-}
+} */
  
 /* 
 .input-area  {
@@ -11326,32 +11336,31 @@ body.logged-in .use-cases-icon-btn {
 } */
 
 
- /* Input area - single definition */
 .input-area {
-    width: 90%; /* Mobile default */
-    max-width: 100%;
+    width: 240px ; 
+    max-width: 600px;
+    width: 100%;
     margin: 0 auto;
     display: flex;
     justify-content: center;
     align-items: flex-start;
- 
-    box-sizing: border-box; /* Important! */
+    box-sizing: border-box; 
     min-height: 100px;
 }
 
 /* Tablet - both scale together */
-@media (min-width: 300px) {
+/* @media (min-width: 300px) {
     .input-area {
         width: 70%;
     }
-}
+} */
 
 /* Desktop - both scale together */
-@media (min-width: 1200px) {
+/* @media (min-width: 1200px) {
     .input-area {
         width: 50%;
     }
-}
+} */
 
 .input-container {
     width: 100%;
@@ -11363,6 +11372,8 @@ body.logged-in .use-cases-icon-btn {
 
 .input-wrapper {
     width: 100%;
+    min-width: 240px;
+    max-width: 600px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;  
@@ -11370,7 +11381,7 @@ body.logged-in .use-cases-icon-btn {
     position: relative;
     border-radius: 12px;
    
-    /* margin-left: 60px; */
+    margin-left: 60px;
     padding: 8px;
      min-height: fit-content; 
 }
@@ -11378,7 +11389,7 @@ body.logged-in .use-cases-icon-btn {
 #message-input {
     width: 90%;
     align-self: flex-start; 
-    min-height: 60px; /* Start with ~2 lines */
+    min-height: 60px;
     max-height: 100px;
   
     background: transparent;
@@ -11386,7 +11397,7 @@ body.logged-in .use-cases-icon-btn {
     font-family: 'Roboto Mono', monospace;
     font-size: 14px;
     resize: none;
- 
+    margin-bottom: 20px;
     border-radius: 12px;
     box-sizing: border-box;
     overflow-y: auto;
@@ -11395,35 +11406,33 @@ body.logged-in .use-cases-icon-btn {
     line-height: 1.5;
     outline: none;
     scrollbar-width: thin;
-    height: auto; /* Important: allow height to be controlled by JS */
+    height: auto; 
 }
 
 
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
     .messages {
-        padding: 16px; /* Less padding on tablets */
+        padding: 16px;
         width: 70%;
     }
-}
+} */
 
-/* Mobile - minimal padding */
-@media (max-width: 480px) {
+/* @media (max-width: 480px) {
     .messages {
-        padding: 8px; /* Minimal padding on mobile */
-        gap: 16px; /* Reduce gap between messages too */
+        padding: 8px; 
+        gap: 16px; 
     }
-}
+} */
 
-/* Desktop */
+/* 
 @media (min-width: 1200px) {
     .messages {
         width: 50%;
-        padding: 32px; /* Full padding on desktop */
+        padding: 32px;
     }
 }
 
-/* Messages container */
 .messages {
     flex: 1;
     overflow-y: auto;
@@ -11446,24 +11455,21 @@ body.logged-in .use-cases-icon-btn {
 .messages > * {
     width: 100%;
     max-width: 100%;
-}
+} */
 
-/* Tablet */
-@media (min-width: 768px) {
+/* @media (min-width: 768px) {
     .messages {
         width: 70%;
     }
-}
+} */
 
-/* Desktop */
-@media (min-width: 1200px) {
+/* @media (min-width: 1200px) {
     .messages {
         width: 50%;
     }
-}
+} */
 
-/* Rest of your media queries for buttons and labels */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
     .input-wrapper::before,
     .input-wrapper[data-mode-label]::before {
         font-size: 10px;
@@ -11472,14 +11478,14 @@ body.logged-in .use-cases-icon-btn {
         bottom: 10px;
         letter-spacing: 0.2px;
     }
-}
+} */
 
-body, html {
-    min-width: 300px; /* Prevent anything below 300px */
-    overflow-x: auto; /* Allow horizontal scroll if needed */
-}
-/* Extra small screens - 300px to 480px */
-@media (min-width: 300px) and (max-width: 480px) {
+/* body, html {
+    min-width: 300px;
+    overflow-x: auto;
+} */
+
+/* @media (min-width: 300px) and (max-width: 480px) {
     .input-wrapper::before,
     .input-wrapper[data-mode-label]::before {
         font-size: 8px;
@@ -11506,23 +11512,22 @@ body, html {
     }
     
     
-}
-
-/* Very small screens - at exactly 300px */
+} */
+/* 
 @media (max-width: 360px) {
     .input-area {
-        width: 98%; /* Almost full width */
+        width: 98%; 
     }
     
     .messages {
         width: 98%;
         padding: 4px;
     }
-}
+} */
  
  
 
-.mode-icon-btn {
+/* .mode-icon-btn {
     padding: 3px;
     min-width: 24px;
     min-height: 24px;
@@ -11544,10 +11549,9 @@ body, html {
 .send-icon-btn svg {
     width: 14px;
     height: 14px;
-}
+} */
 
-/* Mobile - extra small icons */
-@media (max-width: 480px) {
+/* @media (max-width: 480px) {
     .mode-icon-btn {
         padding: 2px;
         min-width: 24px;
@@ -11569,6 +11573,20 @@ body, html {
         width: 14px;
         height: 14px;
     }
+} */
+
+#send-btn
+{
+    width:30px !important;
+    height: 30px !important;
+    margin-right: 10px;
+}
+
+
+#send-btn svg
+{
+    width:24px !important;
+    height: 24px !important;
 }
 
 .messages:not(:empty) ~ .input-area {
