@@ -4818,297 +4818,6 @@ body {
     font-weight: 500;
 }
 
-/* ================================================
-   SPLIT SCREEN STYLES - ADD THESE
-   ================================================ */
-
-/* Split Screen Container */
-.split-screen-container {
-    display: none;
-    width: 100%;
-    height: 100vh;
-    background: #1a1a1a;
-    flex-direction: row;
-    gap: 0;
-}
-
-body.split-screen-active .split-screen-container {
-    display: flex !important;
-}
-
-/* Hide original chat area when split is active */
-body.split-screen-active .chat-area {
-    display: none;
-}
-
-/* Split Left Panel (Messages) */
-.split-left {
-    width: 50%;
-    min-width: 50%;
-    max-width: 50%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #333;
-    background: #1a1a1a;
-    overflow: hidden;
-    flex-shrink: 0; /* Prevent shrinking */
-    /* border:1px solid red */
-}
-
-/* .split-left .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-} */
-
-.split-left .messages::-webkit-scrollbar {
-    width: 6px;
-}
-
-.split-left .messages::-webkit-scrollbar-track {
-    background: transparent !important;
-}
-
-/* .split-left .messages::-webkit-scrollbar-thumb {
-    background: #3a3a3a;
-    border-radius: 4px;
-} */
-
-/* Split left input area */
-/* .split-left .input-area {
-    flex-shrink: 0;
-    padding: 20px;
-    background: #1a1a1a;
-    
-} */
-
-/* .split-left .input-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 100%;
-} */
-
-/* .split-left .input-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-    height: 12vh;
-    display: flex !important;
-    flex-direction: column;
-    background: #1a1a1a;
-    border: 1px solid #d9d9e3;
-    border-radius: 20px;
-} */
-
-
-/* Ensure input is visible in split view */
-/* body.split-screen-active .split-left .input-wrapper {
-    display: flex !important;
-    visibility: visible !important;
-} */
-
-body.split-screen-active .split-left #message-input {
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* Split Right Panel (App/Code) */
-.split-right {
-    width: 50%;
-    min-width: 50%;
-    max-width: 50%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: #1e1e1e;
-    flex-shrink: 0; /* Prevent shrinking */
-    /* border: 1px solid gray; */
-    /* border-left: 0.5px solid gray; */
-}
-
-
-/* Split Tabs */
-.split-tabs {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 16px;
-    background: #F2F1E6 !important;
-    /* border-bottom: 1px solid #333; */
-    flex-shrink: 0;
-}
-
-.split-tab {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    color: #999;
-    cursor: pointer;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 12px;
-    transition: all 0.2s;
-}
-
-.split-tab:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #d4a574;
-}
-
-.split-tab.active {
-    background: rgba(212, 165, 116, 0.1);
-    border-color: rgba(212, 165, 116, 0.3);
-    color: #d4a574;
-}
-
-.split-tab svg {
-    width: 14px;
-    height: 14px;
-}
-
-.split-close {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 6px;
-    color: #999;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.split-close:hover {
-    background: rgba(255, 68, 68, 0.1);
-    border-color: #ff4444;
-    color: #ff4444;
-}
-
-/* Split Content Area */
-.split-content-area {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    width: 100%; /* Force width constraint */
-    min-width: 0; /* Allow content to shrink */
- 
-}
-
-
-.split-tab-content {
-    display: none;
-    width: 100%;
-    height: 100%;
-    position: absolute; /* Use absolute positioning */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
- 
-}
-
-.split-tab-content.active {
-    display: block;
-}
-
-/* Preview Iframe */
-.split-preview-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
- 
-}
-
-/* Code View */
-.split-code-block {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 20px;
-    background: #1e1e1e;
-    overflow: auto;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 12px;
-    line-height: 1.6;
-    box-sizing: border-box; /* Include padding in width calculation */
-}
-
-.split-code-block code {
-    color: #d4d4d4;
-}
-
-.split-code-block::-webkit-scrollbar {
-    width: 8px;
-}
-
-.split-code-block::-webkit-scrollbar-track {
-    background: #1a1a1a;
-}
-
-.split-code-block::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 4px;
-}
-
-.split-copy-btn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: rgba(212, 165, 116, 0.1);
-    border: 1px solid rgba(212, 165, 116, 0.3);
-    border-radius: 6px;
-    color: #d4a574;
-    cursor: pointer;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 11px;
-    transition: all 0.2s;
-    z-index: 10;
-}
-
-.split-copy-btn:hover {
-    background: rgba(212, 165, 116, 0.2);
-    border-color: rgba(212, 165, 116, 0.5);
-    transform: translateY(-1px);
-}
-
-.split-copy-btn svg {
-    width: 12px;
-    height: 12px;
-}
-
-/* Enhanced message styling in split view */
-.split-left .message {
-    margin-bottom: 24px;
-}
-
-.split-left .message.user {
-    /* background: rgba(212, 165, 116, 0.05); */
-    border-left: 2px solid #d4a574;
-    padding: 12px 16px;
-    border-radius: 8px;
-}
-
-.split-left .message.assistant {
-    background: rgba(255, 255, 255, 0.02);
-    padding: 16px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
 
 /* Responsive Design for Split Screen */
 /* @media (max-width: 1200px) {
@@ -5247,12 +4956,6 @@ body.split-screen-active .split-left #message-input {
 } */
 
 /* Target the placeholder div that holds the input wrapper */
-#split-input-placeholder {
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
 
 /* Input wrapper inside split view */
 /* #split-input-placeholder .input-wrapper {
@@ -5268,10 +4971,6 @@ body.split-screen-active .split-left #message-input {
 } */
 
 /* Attached files in split view */
-#split-input-placeholder .attached-files {
-    width: 100%;
-    margin-bottom: 12px;
-}
 
 /* App Versions Selector */
 .app-versions-selector {
@@ -5555,34 +5254,6 @@ body.split-screen-active .split-left #message-input {
 
 
 /* Split code block with Prism syntax highlighting */
-.split-code-block {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background: #2d2d2d;
-    overflow: auto;
-    box-sizing: border-box;
-}
-
-.split-code-block code {
-    display: block;
-    padding: 20px;
-    font-family: 'Roboto Mono', 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #ccc;
-    background: transparent;
-    white-space: pre;
-    word-wrap: normal;
-    overflow-x: auto;
-}
-
-/* Prism theme overrides */
-.split-code-block code.language-markup {
-    background: #2d2d2d !important;
-}
-
 /* Prism token colors */
 .token.tag {
     color: #e06c75 !important;
@@ -5613,24 +5284,6 @@ body.split-screen-active .split-left #message-input {
 .token.prolog {
     color: #61afef !important;
 }
-
-.split-code-block {
-    background: #1e1e1e;
-    margin: 0;
-    padding: 20px;
-    overflow: auto;
-    height: 100%;
-}
-
-.split-code-block code {
-    display: block;
-    line-height: 1.5;
-    font-family: 'Courier New', monospace;
-    color: #d4d4d4;
-    white-space: pre;
-}
-
-
 
 
 
@@ -6641,67 +6294,6 @@ body {
 
 .news-section-btn:hover {
     background: #0d8c6d;
-}
-
-/* Split Screen */
-.split-screen-container {
-    background: #ffffff;
-}
-
-.split-left {
-    border-right: 1px solid #ececf1;
-    background: #ffffff;
-}
-
-.split-right {
-    background: #f7f7f8;
-}
-
-.split-tabs {
-    background: #ececf1;
-    border-bottom: 1px solid #d9d9e3;
-}
-
-.split-tab {
-    color: #565869;
-}
-
-.split-tab:hover {
-    background: rgba(16, 163, 127, 0.05);
-    color: #10a37f;
-}
-
-.split-tab.active {
-    background: rgba(16, 163, 127, 0.1);
-    border-color: #10a37f;
-    color: #10a37f;
-}
-
-.split-close {
-    border: 1px solid #d9d9e3;
-    color: #565869;
-}
-
-.split-close:hover {
-    background: rgba(239, 65, 70, 0.05);
-    border-color: #ef4146;
-    color: #ef4146;
-}
-
-.split-code-block {
-    background: #f7f7f8;
-    color: #2d333a;
-}
-
-.split-copy-btn {
-    background: rgba(16, 163, 127, 0.05);
-    border: 1px solid #10a37f;
-    color: #10a37f;
-}
-
-.split-copy-btn:hover {
-    background: rgba(16, 163, 127, 0.1);
-    border-color: #0d8c6d;
 }
 
 /* Panel Toggle Button */
@@ -7744,18 +7336,6 @@ button,
     background: #0f2d24 !important;
 }
 
-/* Split screen copy button */
-.split-copy-btn {
-    background: rgba(23, 66, 54, 0.1) !important;
-    border: 1px solid #174236 !important;
-    color: #174236 !important;
-}
-
-.split-copy-btn:hover {
-    background: rgba(23, 66, 54, 0.2) !important;
-    border-color: #0f2d24 !important;
-}
-
 /* Chart tab active */
 .chart-tab.active {
     color: #174236 !important;
@@ -7971,12 +7551,6 @@ button,
     background: rgba(23, 66, 54, 0.05) !important;
 }
 
-/* Split tab active */
-.split-tab.active {
-    background: rgba(23, 66, 54, 0.1) !important;
-    border-color: #174236 !important;
-    color: #174236 !important;
-}
 
 /* Mode icon button active */
 .mode-icon-btn.active {
@@ -9301,19 +8875,6 @@ body.logged-in .login-icon-btn {
    SPLIT SCREEN INPUT FIXES
    =================================================== */
 
-/* Fix input area background in split mode */
-.split-left .input-area {
-    background: #F6F5EF !important;
-}
-
-.split-left 
-{
-    background: #F6F5EF !important;
-    display: flex;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
 /* .split-left .messages{
     width: 80% !important;
 } */
@@ -9326,19 +8887,6 @@ body.logged-in .login-icon-btn {
     max-width: 140% !important;
 } */
 
-.split-left .split-input-placeholder
-{
-    background: #ffffff !important;
-}
-
-/* Fix message input in split mode */
-.split-left #message-input {
-    background: #ffffff !important;
-    color: #2d333a !important;
-    /* width: 100% !important; */
-    padding: 12px 180px 12px 50px !important;
-}
-
 /* Fix input container in split mode */
 /* .split-left .input-container {
     width: 90% !important;
@@ -9347,35 +8895,6 @@ body.logged-in .login-icon-btn {
 } */
 
 /* Fix mode icons background in split mode */
-.split-left .input-mode-icons {
-    background: #ffffff !important;
-    /* border: 1px solid #ececf1 !important; */
-}
-
-/* Fix send button positioning in split mode */
-.split-left .send-icon-btn {
-    color: #174236 !important;
-}
-
-/* Fix attached files in split mode */
-.split-left .attached-files {
-    background: transparent !important;
-}
-
-/* Override any black backgrounds in split mode */
-.split-left .input-area,
-.split-left .input-area *
- {
-    background-color: inherit;
-}
-
-.split-left .input-wrapper {
-    background: white !important;
-}
-
-.split-left #message-input {
-    background: #ffffff !important;
-}
 
 /* Cloud Icon Button */
 .cloud-icon-btn {
@@ -9767,15 +9286,6 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     pointer-events: none !important;
 }
 
-
-
-.split-right,
-.split-content-area,
-.split-tab-content,
-.split-tab-content[data-content="preview"] {
-    background-color: var(--chat-bg-color, #1a1a1a) !important;
-}
- 
 
 /* ============================================
    USE CASES PANEL STYLES
@@ -11674,3 +11184,9 @@ body.logged-in .use-cases-icon-btn {
     width: 100%;
 }
  
+
+
+/* =========================================SPLIT SCREEN =========================================== */
+ 
+
+/* =========================================END SPLIT SCREEN ======================================= */
