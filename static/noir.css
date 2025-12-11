@@ -388,17 +388,17 @@ body {
     display: block; 
 }    */
 
-.streaming-message {
+/* .streaming-message {
     width: 100% !important;
     max-width: 100% !important;
     align-self: flex-start !important;
-}
+} */
 
-.streaming-message .message-content {
+/* .streaming-message .message-content {
     text-align: left !important;
     width: 100% !important;
     display: block !important;
-}
+} */
 
 .response-content
 {
@@ -412,13 +412,13 @@ body {
 }
 .message.assistant .response-content {
     text-align: left;
-    width: 100%;
+    /* width: 100%; */
 }
  
-.streaming-message .response-content {
+/* .streaming-message .response-content {
     text-align: left;
     display: block;
-}
+} */
 
 /* 
 .message.user .message-content {
@@ -11617,17 +11617,38 @@ body.logged-in .use-cases-icon-btn {
        bottom: max(20px, calc(env(safe-area-inset-bottom) + 20px));
     }
 }
+ 
 
-.messages 
-{
-    margin-left: 60px !important;
-    width: 100% !important;
-    min-width: 220px !important;
-    max-width: 50% !important;
-    border: 1px solid red;
-    overflow-y: auto !important;
-    height: 80%;
-    min-height: 80% !important;
-    max-height: 80% !important;
-    margin-bottom: 10% !important;
-}
+  @media (min-width: 300px) and (max-width: 699px) {
+  
+    .messages 
+    {
+        margin-left: 60px !important;
+        width: 80% !important;
+        min-width: 80% !important;
+        max-width: 80%!important;
+        overflow-y: auto !important;
+        /* height: 80%;
+        min-height: 80% !important;
+        max-height: 80% !important; */
+        margin-bottom: 150px !important;
+    }
+ } 
+
+
+  @media (min-width: 700px) {
+  
+    .messages 
+    {
+        margin-left: 60px !important;
+        width: 640px !important;
+        min-width: 540px !important;
+        max-width: 640px!important;
+        overflow-y: auto !important;
+        /* height: 70%;
+        min-height: 70% !important;
+        max-height: 70% !important; */
+        margin-bottom: 150px !important;
+        /* position: absolute; */
+    }
+ } 
