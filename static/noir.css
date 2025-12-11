@@ -273,7 +273,7 @@ body {
 } 
 
 .messages::-webkit-scrollbar {
-    width: 2px;
+    width: 6px;
 }
 
 .messages::-webkit-scrollbar-track {
@@ -430,8 +430,10 @@ body {
 
 /* .messages > * {
     width: 100%;   
-    max-width: 100%; 
- 
+    max-width: 700px; 
+    min-width: 220px;
+    margin-left: 10px;
+    margin-right: 10px;
 }
    */
 .message-content h1, .message-content h2, .message-content h3 {
@@ -1454,14 +1456,7 @@ body {
      color: #ffffff !important;
 }
 
-/* Messages scrollbar */
-.messages::-webkit-scrollbar {
-    width: 2px;
-}
-
-.messages::-webkit-scrollbar-track {
-    background: transparent;
-}
+  
 
 .messages::-webkit-scrollbar-thumb {
     background: #3a3a3a;  /* Lighter gray for visibility */
@@ -4871,7 +4866,7 @@ body.split-screen-active .chat-area {
 } */
 
 .split-left .messages::-webkit-scrollbar {
-    width: 2px;
+    width: 6px;
 }
 
 .split-left .messages::-webkit-scrollbar-track {
@@ -11621,4 +11616,18 @@ body.logged-in .use-cases-icon-btn {
     .messages:not(:empty) ~ .input-area {
        bottom: max(20px, calc(env(safe-area-inset-bottom) + 20px));
     }
+}
+
+.messages 
+{
+    margin-left: 60px !important;
+    width: 100% !important;
+    min-width: 220px !important;
+    max-width: 50% !important;
+    border: 1px solid red;
+    overflow-y: auto !important;
+    height: 80%;
+    min-height: 80% !important;
+    max-height: 80% !important;
+    margin-bottom: 10% !important;
 }
