@@ -19,6 +19,8 @@ function openLoginPanel() {
 // Make sure this is at the TOP LEVEL of your JS file, not inside any other function
 function toggleConversationsPanel() {
     const panel = document.querySelector('.conversations-panel');
+ 
+    // panel.style.display = "flex"
     console.log('Toggle clicked, panel found:', !!panel);
     if (panel) {
         const wasCollapsed = panel.classList.contains('collapsed');
@@ -28,9 +30,7 @@ function toggleConversationsPanel() {
         // Save state to localStorage
         const isCollapsed = panel.classList.contains('collapsed');
         localStorage.setItem('conversations_panel_collapsed', isCollapsed);
-        
-        // Update button icons if needed
-        // updatePanelButtonIcons(isCollapsed);
+         
     }
 }
 
@@ -1406,7 +1406,7 @@ function showSplitScreen(appHtml) {
         splitContainer.id = 'split-screen-container';
         splitContainer.className = 'split-screen-container';
         splitContainer.innerHTML = `
-            <div class="split-left">
+            <div class="split-left" id="split-left-div">
                 <div class="messages" id="split-messages"></div>
                 <div class="input-area">
                     <div class="input-container">
@@ -1416,47 +1416,41 @@ function showSplitScreen(appHtml) {
             </div>
             <div class="split-right">
                 <div class="split-tabs">
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <button class="split-tab active" data-tab="preview">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                            Preview
-                        </button>
-                        ${shouldShowCodeTab() ? `
-                        <button class="split-tab" data-tab="code">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="16 18 22 12 16 6"></polyline>
-                                <polyline points="8 6 2 12 8 18"></polyline>
-                            </svg>
-                            Code
-                        </button>   ` : ''}
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <!-- App selector for multiple apps -->
-                        <div id="split-app-selector" style="display: none; align-items: center; gap: 6px;">
-                            <span style="font-size: 11px; color: rgba(255,255,255,0.6);">App:</span>
-                            <select id="split-app-select" class="version-dropdown" style="
-                                padding: 6px 12px;
-                                background: rgba(255,255,255,0.05);
-                                border: 1px solid rgba(255,255,255,0.1);
-                                border-radius: 6px;
-                                color: #fff;
-                                font-size: 12px;
-                                font-family: 'Roboto Mono', monospace;
-                                cursor: pointer;
-                            ">
-                            </select>
-                        </div>
-                        <button class="split-close" onclick="closeSplitScreen()" id="closeSplitScreen">
+
+                 <button class="split-close" onclick="closeSplitScreen()"  id="closeSplitScreen">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
-                            Close
                         </button>
+
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <!-- App selector for multiple apps -->
+                        <div id="split-app-selector" style="display: none; align-items: center; gap: 6px;">
+                            
+                            <select id="split-app-select" class="version-dropdown" >
+                            </select>
+                        </div>
+
                     </div>
+
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="preview" data-tab="preview">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                        ${true ? `
+                        <button class="code" data-tab="code">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                            </svg>
+                       
+                        </button>   ` : ''}
+                    </div>
+                       
                 </div>
                 <div class="split-content-area">
                     <div class="split-tab-content active" data-content="preview">
@@ -1806,7 +1800,7 @@ function updateSplitAppSelector(msgId) {
 // }
 
 function loadAppInSplit(htmlContent) {
-     
+         
     // Load preview
     const iframe = document.getElementById('split-preview-iframe');
     if (iframe) {
@@ -1962,8 +1956,144 @@ function loadAppInSplit(htmlContent) {
             }
         }
     }
+
+    
 }
- function closeSplitScreen() {
+//  function closeSplitScreen() {
+//     isSplitScreenActive = false;
+//     currentAppHtml = null;
+    
+//     // Disconnect observer
+//     if (window.splitMessagesObserver) {
+//         window.splitMessagesObserver.disconnect();
+//         window.splitMessagesObserver = null;
+//     }
+    
+//     const splitContainer = document.getElementById('split-screen-container');
+//     const messagesContainer = document.getElementById('messages');
+//     const chatArea = document.querySelector('.chat-area');
+//     const inputWrapper = document.querySelector('.input-wrapper');
+    
+//     // *** ENHANCED FIX: Save scroll position and lock it ***
+//     const splitMessages = document.getElementById('split-messages');
+//     const savedScrollPosition = splitMessages ? splitMessages.scrollTop : 0;
+    
+//     // Temporarily disable smooth scrolling
+//     const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+//     document.documentElement.style.scrollBehavior = 'auto';
+    
+//     // Lock the scroll by preventing scroll events
+//     let scrollLocked = true;
+//     const preventScroll = (e) => {
+//         if (scrollLocked) {
+//             e.preventDefault();
+//             e.stopPropagation();
+//         }
+//     };
+    
+//     // Add scroll lock
+//     if (messagesContainer) {
+//         messagesContainer.addEventListener('scroll', preventScroll, { passive: false });
+//     }
+//     document.addEventListener('scroll', preventScroll, { passive: false });
+//     window.addEventListener('scroll', preventScroll, { passive: false });
+    
+//     if (splitContainer) {
+//         splitContainer.style.display = 'none';
+//     }
+    
+//     document.body.classList.remove('split-screen-active');
+    
+//     // Restore conversations panel to its previous state (optional)
+//     const conversationsPanel = document.querySelector('.conversations-panel');
+//     if (conversationsPanel && window.wasPanelCollapsedBeforeSplit === false) {
+//         conversationsPanel.classList.remove('collapsed');
+//     }
+    
+//     // Move input back to original chat area
+//     if (inputWrapper && chatArea) {
+//         let originalInputArea = chatArea.querySelector('.input-area');
+        
+//         if (originalInputArea) {
+//             let inputContainer = originalInputArea.querySelector('.input-container');
+//             if (!inputContainer) {
+//                 inputContainer = document.createElement('div');
+//                 inputContainer.className = 'input-container';
+//                 originalInputArea.appendChild(inputContainer);
+//             }
+//             inputContainer.appendChild(inputWrapper);
+//             originalInputArea.style.display = 'flex';
+//         }
+//     }
+    
+//     // Show messages container again
+//     if (messagesContainer) {
+//         messagesContainer.style.display = 'block';
+        
+//         // Force immediate scroll position restoration
+//         messagesContainer.scrollTop = savedScrollPosition;
+        
+//         // Use multiple RAF to ensure position sticks
+//         requestAnimationFrame(() => {
+//             messagesContainer.scrollTop = savedScrollPosition;
+            
+//             requestAnimationFrame(() => {
+//                 messagesContainer.scrollTop = savedScrollPosition;
+                
+//                 // Remove scroll lock after everything settles
+//                 setTimeout(() => {
+//                     scrollLocked = false;
+//                     if (messagesContainer) {
+//                         messagesContainer.removeEventListener('scroll', preventScroll);
+//                     }
+//                     document.removeEventListener('scroll', preventScroll);
+//                     window.removeEventListener('scroll', preventScroll);
+                    
+//                     // Restore original scroll behavior
+//                     document.documentElement.style.scrollBehavior = originalScrollBehavior;
+//                 }, 100);
+//             });
+//         });
+//     }
+// //  if (window.innerWidth <= 1024) {
+// //     requestAnimationFrame(() => {
+// //         requestAnimationFrame(() => {
+// //             const inputWrapper = document.querySelector('.input-wrapper');
+// //             if (inputWrapper) {
+// //                 // Set to 100% width
+// //                 inputWrapper.style.setProperty('left', 'auto', 'important');
+// //                 inputWrapper.style.setProperty('right', 'auto', 'important');
+// //                 inputWrapper.style.setProperty('position', 'relative', 'important');
+// //                 inputWrapper.style.setProperty('width', '88vw', 'important');
+// //                 inputWrapper.style.setProperty('max-width', '100%', 'important');
+// //                 inputWrapper.style.setProperty('min-width', '100%', 'important');
+// //                 inputWrapper.style.setProperty('transform', 'none', 'important');
+// //                 inputWrapper.style.setProperty('margin', '0', 'important');
+// //                 inputWrapper.style.setProperty('display', 'flex', 'important');
+// //             }
+// //         });
+// //     });
+// // }
+
+// // setTimeout(() => {
+// //     const inputWrapper = document.querySelector('.input-wrapper');
+// //     console.log('Input wrapper found?', !!inputWrapper);
+    
+// //     if (inputWrapper) {
+// //         console.log('Parent element:', inputWrapper.parentElement?.className);
+// //         console.log('Inline styles:', inputWrapper.style.cssText);
+        
+// //         const computed = window.getComputedStyle(inputWrapper);
+// //         console.log('Computed left:', computed.left);
+// //         console.log('Computed right:', computed.right);
+// //         console.log('Computed position:', computed.position);
+// //         console.log('Computed width:', computed.width);
+// //     }
+// // }, 600);
+
+// }
+
+function closeSplitScreen() {
     isSplitScreenActive = false;
     currentAppHtml = null;
     
@@ -1978,7 +2108,7 @@ function loadAppInSplit(htmlContent) {
     const chatArea = document.querySelector('.chat-area');
     const inputWrapper = document.querySelector('.input-wrapper');
     
-    // *** ENHANCED FIX: Save scroll position and lock it ***
+    // Save scroll position and lock it
     const splitMessages = document.getElementById('split-messages');
     const savedScrollPosition = splitMessages ? splitMessages.scrollTop : 0;
     
@@ -2008,10 +2138,22 @@ function loadAppInSplit(htmlContent) {
     
     document.body.classList.remove('split-screen-active');
     
-    // Restore conversations panel to its previous state (optional)
+    // Restore conversations panel to its previous state
     const conversationsPanel = document.querySelector('.conversations-panel');
     if (conversationsPanel && window.wasPanelCollapsedBeforeSplit === false) {
         conversationsPanel.classList.remove('collapsed');
+    }
+    
+    // Remove hidden class from split-left
+    const splitLeft = document.querySelector('.split-left');
+    if (splitLeft) {
+        splitLeft.classList.remove('hidden');
+    }
+    
+    // Remove active class from split-right
+    const splitRight = document.querySelector('.split-right');
+    if (splitRight) {
+        splitRight.classList.remove('active');
     }
     
     // Move input back to original chat area
@@ -2027,6 +2169,12 @@ function loadAppInSplit(htmlContent) {
             }
             inputContainer.appendChild(inputWrapper);
             originalInputArea.style.display = 'flex';
+            
+            // Clear inline styles from input-wrapper
+            inputWrapper.removeAttribute('style');
+            
+            // Force reflow to ensure CSS recalculates
+            void inputWrapper.offsetHeight;
         }
     }
     
@@ -2059,46 +2207,6 @@ function loadAppInSplit(htmlContent) {
             });
         });
     }
- if (window.innerWidth <= 1024) {
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            const inputWrapper = document.querySelector('.input-wrapper');
-            if (inputWrapper) {
-                // Set to 100% width
-                inputWrapper.style.setProperty('left', 'auto', 'important');
-                inputWrapper.style.setProperty('right', 'auto', 'important');
-                inputWrapper.style.setProperty('position', 'relative', 'important');
-                inputWrapper.style.setProperty('width', '88vw', 'important');
-                inputWrapper.style.setProperty('max-width', '100%', 'important');
-                inputWrapper.style.setProperty('min-width', '100%', 'important');
-                inputWrapper.style.setProperty('transform', 'none', 'important');
-                inputWrapper.style.setProperty('margin', '0', 'important');
-                inputWrapper.style.setProperty('display', 'flex', 'important');
-            }
-        });
-    });
-}
-    // At the very END of closeSplitScreen(), add:
-console.log('=== CLOSE SPLIT SCREEN DEBUG ===');
-console.log('Window width:', window.innerWidth);
-console.log('Split screen active class?', document.body.classList.contains('split-screen-active'));
-
-setTimeout(() => {
-    const inputWrapper = document.querySelector('.input-wrapper');
-    console.log('Input wrapper found?', !!inputWrapper);
-    
-    if (inputWrapper) {
-        console.log('Parent element:', inputWrapper.parentElement?.className);
-        console.log('Inline styles:', inputWrapper.style.cssText);
-        
-        const computed = window.getComputedStyle(inputWrapper);
-        console.log('Computed left:', computed.left);
-        console.log('Computed right:', computed.right);
-        console.log('Computed position:', computed.position);
-        console.log('Computed width:', computed.width);
-    }
-}, 600);
-
 }
 
 function copySplitHtml() {
@@ -5875,21 +5983,43 @@ function updateConversationTooltips() {
     }
 }
 document.addEventListener('DOMContentLoaded', () => {
+ 
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = "toggleBtn"
+    toggleBtn.className = 'panel-toggle-btn';
+    toggleBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+    `;
+
+    toggleBtn.style.position = 'fixed';
+    toggleBtn.style.top = '10px';
+    toggleBtn.style.left = '10px';
+    toggleBtn.style.padding = '10px';
+    toggleBtn.style.backgroundColor = '#333';
+    toggleBtn.style.color = 'white';
+    toggleBtn.style.zIndex = '1000';
+
+    toggleBtn.addEventListener('click', toggleConversationsPanel);
+ 
+    document.body.appendChild(toggleBtn)
     toggleEmptyChat();
     
     // Initialize panel toggle button
     const panel = document.querySelector('.conversations-panel');
     if (panel) {
         // Create toggle button
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'panel-toggle-btn';
-        toggleBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 18l-6-6 6-6"/>
-            </svg>
-        `;
-        toggleBtn.addEventListener('click', toggleConversationsPanel);
-        panel.appendChild(toggleBtn);
+        // const toggleBtn = document.createElement('button');
+        // toggleBtn.id = "toggleBtn"
+        // toggleBtn.className = 'panel-toggle-btn';
+        // toggleBtn.innerHTML = `
+        //     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        //         <path d="M15 18l-6-6 6-6"/>
+        //     </svg>
+        // `;
+        // toggleBtn.addEventListener('click', toggleConversationsPanel);
+        // panel.appendChild(toggleBtn);
         
         // Restore saved state
         const savedState = localStorage.getItem('conversations_panel_collapsed');
@@ -6256,6 +6386,7 @@ function openConversationsPanel() {
 }
 
 function closeConversationsPanel() {
+ 
     document.getElementById('conversations-selection-panel').classList.remove('active');
     document.getElementById('conversations-panel-backdrop').classList.remove('active');
 
@@ -7692,6 +7823,7 @@ function displayUseCaseInChat(useCase, messages) {
 // ============================================
 
 function openUseCasesPanel() {
+    toggleConversationsPanel()
     console.log('📂 Opening Use Cases Panel...');
     
     // Show panel regardless of login status - use cases are public!
@@ -8005,6 +8137,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Close all panels function
     function closeAllPanels() {
+         const panel = document.querySelector('.conversations-panel');
+        if (panel) {
+            const wasCollapsed = panel.classList.contains('collapsed');
+            if(!wasCollapsed)
+            {
+                panel.classList.toggle('collapsed');
+            }
+        }
         document.querySelectorAll('.news-selection-panel, .news-overlay, .login-panel, .conversations-selection-panel, .use-cases-selection-panel, .use-cases-overlay, .cloud-wizard-panel, .premium-popup-modal, .control-panel').forEach(panel => {
             panel.classList.remove('active', 'mobile-active');
         });

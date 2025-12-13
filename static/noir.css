@@ -714,6 +714,7 @@ body {
     letter-spacing: 3px;
     text-align: center;
     margin-bottom: 8px;
+    top:25px
 }
 
 .panel-status {
@@ -1547,10 +1548,11 @@ body {
  
 body .conversations-panel.collapsed {
     flex: 0 0 60px !important;
-    min-width: 60px !important;
-    max-width: 60px !important;
-    width: 60px !important;
+    min-width: 0px !important;
+    max-width: 0px !important;
+    width: 00px !important;
     align-items: center;
+    display: none;
 }
 /* .conversations-panel.collapsed .panel-section {
     display: none !important;
@@ -1708,18 +1710,18 @@ body.logged-in .panel-section:has(.premium-card) {
     display: block;
 }
 
-.response-tabs {
+/* .response-tabs {
     display: flex;
     gap: 8px;
     margin-bottom: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+} */
 
 .response-tab {
-    padding: 8px 16px;
-    background: transparent;
+    padding: 8px 8px;
+    background: #174236;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
+    color: white !important;
     font-family: 'Roboto Mono', monospace;
     font-size: 11px;
     font-weight: 600;
@@ -1727,16 +1729,19 @@ body.logged-in .panel-section:has(.premium-card) {
     text-transform: uppercase;
     cursor: pointer;
     transition: all 0.3s;
-    border-bottom: 2px solid transparent;
+    /* border-bottom: 2px solid transparent; */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
 }
 
 .response-tab:hover {
-    color: rgba(255, 255, 255, 0.8);
+    color: white;
+    transform: translateY(-3px);
+    
 }
 
 .response-tab.active {
-    color: #ffffff;
-    border-bottom-color: #ffffff;
+    color: white;
 }
 
 .tab-content {
@@ -1809,21 +1814,7 @@ body.logged-in .panel-section:has(.premium-card) {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.response-tab {
-    padding: 8px 16px;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.5);
-    font-family: 'Roboto Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.3s;
-    border-bottom: 2px solid transparent;
-    display: block !important;
-}
+
 
 .conversation-filter {
     margin-bottom: 16px;
@@ -7565,13 +7556,7 @@ button,
 .panel-toggle-btn svg {
     stroke: #174236 !important;
 }
-
-/* Response tab active */
-.response-tab.active {
-    color: #174236 !important;
-    border-bottom-color: #174236 !important;
-}
-
+ 
 /* Asset type label */
 .asset-type {
     color: #174236 !important;
@@ -8543,7 +8528,7 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
     width: 40px;
     height: 40px;
     border: none;
-    background: rgba(23, 66, 54, 0.1);
+    /* background: rgba(23, 66, 54, 0.1); */
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -8557,14 +8542,16 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 .login-icon-btn:hover {
     background: rgba(23, 66, 54, 0.2);
     transform: scale(1.05);
+    background: #174236;
+    color:white
 }
 
 .login-icon-btn svg {
     width: 20px;
     height: 20px;
-    color: #174236;
+    /* color: #174236; */
 }
-
+ 
 .login-panel-backdrop {
     position: fixed;
     top: 0;
@@ -8587,13 +8574,14 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 .login-panel {
     position: fixed;
     top: 0;
+    left:0;
     /* right: -450px; */
-    width: 240px;
+    width: 300px;
     height: 100vh;
-    left: 60px;
+    /* left: 60px; */
     /* background: linear-gradient(135deg, #174236 0%, #0f2a21 100%); */
     background: #F6F5EF;
-    z-index: 1000;
+    z-index: 20000;
     display: flex;
     flex-direction: column;
     transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -8625,26 +8613,6 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 .login-panel-logo svg {
     width: 24px;
     height: 24px;
-}
-
-.login-panel-close-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 24px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.login-panel-close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: rotate(90deg);
 }
 
 .login-panel-content {
@@ -9284,7 +9252,8 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     height: 20px;
 }
 .use-cases-icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #174236;
+    color:white;
     border-color: rgba(212, 165, 116, 0.3);
     transform: translateY(-2px);
 }
@@ -9296,10 +9265,10 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 /* Use Cases Selection Panel (Category View) */
 .use-cases-selection-panel {
     position: fixed;
-    left: 60px;
+    /* left: 60px; */
     top: 0;
-    min-width: 240px;
-    max-width: 250px;
+    min-width: 300px;
+    max-width: 300px;
     width: 100%;
     height: 100vh;
     background: #1a1a1a;
@@ -9413,7 +9382,7 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 /* Use Cases Overlay (Full Screen View) */
 .use-cases-overlay {
     position: fixed;
-    left: 60px;
+    /* left: 60px; */
     top: 0;
     width: calc(100vw - 80px);
     height: 100vh;
@@ -9424,8 +9393,7 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* left: 0 !important;   */
-    width: 97vw !important;  /* Full viewport width */
+ 
 }
 
 .use-cases-overlay.active {
@@ -9497,7 +9465,7 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
 .use-cases-content {
     flex: 1;
     overflow-y: auto;
-    padding: 30px;
+    /* padding: 30px; */
     background: #F6F5EF  ;
 }
 
@@ -9513,12 +9481,12 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 20px;
+    /* padding: 20px; */
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    /* gap: 12px; */
     width: 100%;
     min-width: 200px;
     max-width: 200px;
@@ -10105,7 +10073,7 @@ body.logged-in .use-cases-icon-btn {
     position: relative;
     border-radius: 12px;
     margin-bottom: 10px;
-    margin-left: 70px;
+    /* margin-left: 70px; */
     padding: 8px;
      min-height: fit-content; 
 }
@@ -10183,10 +10151,10 @@ body.logged-in .use-cases-icon-btn {
   @media (min-width: 300px) and (max-width: 699px) {
     .messages 
     {
-        margin-left: 60px !important;
-        width: 80% !important;
-        min-width: 80% !important;
-        max-width: 80%!important;
+        /* margin-left: 60px !important; */
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100%!important;
         overflow-y: auto !important;
         margin-bottom: 200px !important;
     }
@@ -10196,7 +10164,7 @@ body.logged-in .use-cases-icon-btn {
   @media (min-width: 700px) {
     .messages 
     {
-        margin-left: 60px !important;
+        /* margin-left: 60px !important; */
         width: 640px !important;
         min-width: 540px !important;
         max-width: 640px!important;
@@ -10215,6 +10183,7 @@ body.logged-in .use-cases-icon-btn {
     max-width: 2000px !important;
     overflow-y: auto !important;
     margin-bottom: 200px !important;
+   
 }
 
 .use-cases-grid > * {
@@ -10235,7 +10204,7 @@ body.logged-in .use-cases-icon-btn {
     {
         display: flex;
         flex-direction: column;
-        width: calc(100% - 60px);
+        /* width: calc(100% - 60px); */
         gap:10px;
     }
     
@@ -10267,18 +10236,16 @@ body.logged-in .use-cases-icon-btn {
         top:100px !important;
         left: 0 !important;
         right: 0 !important;
-        /* bottom: 140px !important;  */
-        width: calc(100% -60px) !important;
+        /* width: calc(100% -60px) !important; */
         height: calc(90%) !important;
         overflow: hidden;
         display: block !important;
-        margin-left: 60px;
+        /* margin-left: 60px; */
         margin-right: 10px;
         margin-bottom: 10px;
         border:2px solid red
     }
     
-    /* Make iframe fill its container completely */
     .split-right .split-tab-content iframe,
     .split-right #split-preview-iframe {
         position: absolute !important;
@@ -10297,10 +10264,7 @@ body.logged-in .use-cases-icon-btn {
     max-width: 100% !important;
     min-width: 100% !important;
 }
-
- 
 }
-
 
 @media(min-width:1200px)
 {
@@ -10308,34 +10272,43 @@ body.logged-in .use-cases-icon-btn {
     {
         display: flex;
         flex-direction: row;
-        margin-left: 60px;  /* Start from conversations panel edge */
-        width: calc(100% - 60px);  /* Full width minus panel */
+        margin-left: 60px;   
+        width: calc(100% - 60px);   
         min-height: 100vh;
     }
 
     .split-left
     {
-        margin-bottom: 200px;
+        margin-bottom: 150px;
         flex: 1;  /* Take up half the space */
         overflow-y: auto;
-         
+        width:100% !important;
+        min-width: 40%;
+        max-width: 40%;
     }
-     .input-wrapper {
-        min-width: 540px !important;
-        max-width: 600px;
+     .input-area {
+        width:100% !important;
+        min-width: 40%;
+        max-width: 40%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;  
+        position: relative;
+        border-radius: 12px;
+        margin-bottom: 10px;
     }
     
-    .input-area {
+    .input-wrapper
+    {
+        width:100% !important;
         min-width: 540px;
-        max-width: 600px;
+        max-width: 540px;
     }
-    
     .split-right
     {
         flex: 1;  /* Take up half the space */
         overflow-y: auto;
     }
-
     
     .split-tabs {
         flex-direction: row !important;
@@ -10347,17 +10320,36 @@ body.logged-in .use-cases-icon-btn {
         flex-shrink: 0;
         align-items: flex-start;
     }
+
+    .split-right .split-tab-content {
+        position: absolute !important;
+        width: 60% !important;
+        height: calc(90%) !important;
+        overflow: hidden;
+        display: block !important;
+        margin-right: 10px;
+    }
+    .split-right .split-tab-content iframe,
+    .split-right #split-preview-iframe {
+        position: absolute !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+        border: none !important
+    }
 }
 
 @media (min-width: 300px) and (max-width: 699px) {
     .messages 
     {
-        margin-left: 60px !important;
-        width: 80% !important;
-        min-width: 80% !important;
-        max-width: 80%!important;
+        /* margin-left: 60px !important; */
+        width: 100% !important;
+        min-width: 95% !important;
+        max-width: 95%!important;
         overflow-y: auto !important;
         margin-bottom: 200px !important;
+        top:100px !important
+ 
     }
 
     .split-tabs {
@@ -10385,161 +10377,114 @@ body.logged-in .use-cases-icon-btn {
         margin-bottom: 200px !important;
     } 
   }
-    /* .split-tabs {
-        flex-direction: row;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 12px 16px;
-        background: #F2F1E6 !important;
-        flex-shrink: 0;
-        align-items: flex-start;
- }
-
-
-
-.split-tab {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    color: #999;
-    cursor: pointer;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 12px;
-    transition: all 0.2s;
-}
-
-.split-tab:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #d4a574;
-}
-
-.split-tab.active {
-    background: rgba(212, 165, 116, 0.1);
-    border-color: rgba(212, 165, 116, 0.3);
-    color: #d4a574;
-}
-
-.split-tab svg {
-    width: 14px;
-    height: 14px;
-} */
-
-/* .split-close {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+   
+.split-close {
     width: 32px;
     height: 32px;
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 6px;
-    color: #999;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.split-close:hover {
-    background: rgba(255, 68, 68, 0.1);
-    border-color: #ff4444;
-    color: #ff4444;
-} */
-
-.split-close {
-    width: 42px;   /* ← Change from 20px */
-    height: 42px;  /* ← Change from 20px */
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    flex-shrink: 0; /* ← Add this to prevent shrinking */
+    
 }
 
-/* Keep SVG icon at 20px */
-.split-close svg {
-    width: 20px;
-    height: 20px;
-}
 .split-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(212, 165, 116, 0.3);
-    transform: translateY(-2px);
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.4);
+    transform: translateY(-3px);
 }
 
-.split-close:active {
-    transform: translateY(0);
+.main-panel-close-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* background: rgba(255, 255, 255, 0.05); */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: absolute;
+    right:10px;
+    top:10px;
+    font-size:18px
+};
+
+
+.main-panel-close-btn:hover {
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.4);
+    transform: translateY(-3px);
 }
 
+
+.login-panel-close-btn {
+    width: 32px !important;
+    height: 32px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: absolute;
+    right:10px;
+    top:10px;
+    /* font-size:18px */
+}
+
+.login-panel-close-btn:hover {
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.4);
+}
 
 .preview {
-    width: 72px;   /* ← Change from 20px */
-    height: 42px;  /* ← Change from 20px */
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    flex-shrink: 0; /* ← Add this to prevent shrinking */
 }
 
-/* Keep SVG icon at 20px */
-.preview svg {
-    width: 20px;
-    height: 20px;
-}
 .preview:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(212, 165, 116, 0.3);
-    transform: translateY(-2px);
+    background: #174236;
+    border-color: rgba(255, 68, 68, 0.4);
+    color: white;
+    transform: translateY(-3px);
 }
-
-.preview:active {
-    transform: translateY(0);
-}
-
 
 .code {
-    width: 72px;   /* ← Change from 20px */
-    height: 42px;  /* ← Change from 20px */
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    flex-shrink: 0; /* ← Add this to prevent shrinking */
 }
 
-/* Keep SVG icon at 20px */
-.code svg {
-    width: 20px;
-    height: 20px;
-}
 .code:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(212, 165, 116, 0.3);
-    transform: translateY(-2px);
+    background: #174236;
+    border-color: rgba(255, 68, 68, 0.4);
+    color:white;
+    transform: translateY(-3px);
 }
-
-.code:active {
-    transform: translateY(0);
-}
-/* =========================================END SPLIT SCREEN ======================================= */
-/* =========================================END SPLIT SCREEN ======================================= */
+ 
 
 .app-version-selector {
     position: relative;
@@ -10588,4 +10533,14 @@ body.logged-in .use-cases-icon-btn {
     transform: translateY(-50%);
     pointer-events: none;
     color: #8B7355;
+}
+ 
+.use-case-card
+{
+    margin-left:10px;
+    margin-top:10px
+}
+.use-case-card > *
+{
+    margin:10px;
 }
