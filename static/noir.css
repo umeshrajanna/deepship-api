@@ -10152,7 +10152,7 @@ body.logged-in .use-cases-icon-btn {
         min-width: 100% !important;
         max-width: 100%!important;
         overflow-y: auto !important;
-        margin-bottom: 200px !important;
+        /* margin-bottom: 200px !important; */
     }
 
 } 
@@ -10543,7 +10543,6 @@ body.logged-in .use-cases-icon-btn {
 
 .messages
 {
-    position: fixed;
+    position: relative;
     top:60px !important;
-    border:1px solid red
 }
