@@ -4885,9 +4885,10 @@ body {
 
 /* Toggle button - Fixed */
 .panel-toggle-btn {
-    position: absolute;
-    top: 20px;
-    right: 8px; /* Inside the panel */
+    display: flex;
+    position: fixed;
+    top: 10px;
+    left: 10px; /* Inside the panel */
     width: 24px;
     height: 24px;
     background: #d4a574 !important;
@@ -4922,7 +4923,7 @@ body {
     height: 12px;
     transition: transform 0.3s;
     flex-shrink: 0;
-    display: block;
+    /* display: block; */
     stroke: #1a1a1a;
 }
 
@@ -6669,12 +6670,7 @@ button,
 .conversations-panel.collapsed .panel-section:first-child {
     display: block !important;
 }
-
-/* Adjust toggle button so it doesn't cover logo */
-.panel-toggle-btn {
-    top: 60px !important;
-}
-
+ 
 /* FIX: Input mode icons - Light theme override */
 .input-mode-icons {
     background: #f7f7f8 !important;
@@ -10543,4 +10539,11 @@ body.logged-in .use-cases-icon-btn {
 .use-case-card > *
 {
     margin:10px;
+}
+
+.messages
+{
+    position: fixed;
+    top:60px !important;
+    border:1px solid red
 }

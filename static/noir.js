@@ -5993,17 +5993,19 @@ document.addEventListener('DOMContentLoaded', () => {
         </svg>
     `;
 
-    toggleBtn.style.position = 'fixed';
-    toggleBtn.style.top = '10px';
-    toggleBtn.style.left = '10px';
-    toggleBtn.style.padding = '10px';
-    toggleBtn.style.backgroundColor = '#333';
-    toggleBtn.style.color = 'white';
-    toggleBtn.style.zIndex = '1000';
+    // toggleBtn.style.position = 'fixed';
+    // toggleBtn.style.top = '10px';
+    // toggleBtn.style.left = '10px';
+    // toggleBtn.style.padding = '10px';
+    // toggleBtn.style.backgroundColor = '#333';
+    // toggleBtn.style.color = 'white';
+    // toggleBtn.style.zIndex = '1000';
 
     toggleBtn.addEventListener('click', toggleConversationsPanel);
- 
-    document.body.appendChild(toggleBtn)
+    const chat_area = document.getElementById('chat-area');
+
+    // document.body.appendChild(toggleBtn)
+    chat_area.appendChild(toggleBtn)
     toggleEmptyChat();
     
     // Initialize panel toggle button
