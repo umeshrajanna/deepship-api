@@ -1279,7 +1279,7 @@ async def stream_response_direct(
             reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
             assets=json.dumps(extracted_assets) if extracted_assets else None,
             lab_mode=is_lab_mode,
-            app="app",
+            app=None,
             celery_task_id=None  # ✅ NULL for direct responses
         )
         db.add(assistant_msg)
@@ -1967,54 +1967,68 @@ async def get_messages(
         Message.conversation_id == uuid.UUID(conversation_id)
     ).order_by(Message.created_at).all()
     
-    result = []
-    for m in messages:
-        # Fetch reasoning steps from ReasoningStep table
-        reasoning_steps = None
-        if m.role == "assistant":
-            # Query ReasoningStep table for this message
-            steps = db.query(ReasoningStep).filter(
-                ReasoningStep.message_id == m.id
-            ).order_by(ReasoningStep.step_number).all()
+    return [{
+        "id": str(m.id),
+        "role": m.role,
+        "content": m.content,
+        "has_file": m.has_file,
+        "created_at": m.created_at.isoformat(),
+        "sources": json.loads(m.sources) if m.sources else None,
+        "reasoning_steps": json.loads(m.reasoning_steps) if m.reasoning_steps else None,
+        "assets": json.loads(m.assets) if m.assets else None,  # NEW,
+        "app":  m.app,
+        "lab_mode": m.lab_mode,  # NEW
+        "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
+    } for m in messages]
+      
+    # result = []
+    # for m in messages:
+    #     # Fetch reasoning steps from ReasoningStep table
+    #     reasoning_steps = None
+    #     if m.role == "assistant":
+    #         # Query ReasoningStep table for this message
+    #         steps = db.query(ReasoningStep).filter(
+    #             ReasoningStep.message_id == m.id
+    #         ).order_by(ReasoningStep.step_number).all()
             
-            if steps:
-                reasoning_steps = []
-                for step in steps:
-                    step_data = {
-                        "step": step.content,
-                        "content": step.content,
-                        "step_number": step.step_number
-                    }
+    #         if steps:
+    #             reasoning_steps = []
+    #             for step in steps:
+    #                 step_data = {
+    #                     "step": step.content,
+    #                     "content": step.content,
+    #                     "step_number": step.step_number
+    #                 }
                     
-                    # Add optional fields if they exist
-                    if step.query:
-                        step_data["query"] = step.query
-                    if step.category:
-                        step_data["category"] = step.category
-                    if step.sources:
-                        try:
-                            step_data["sources"] = json.loads(step.sources)
-                        except:
-                            step_data["sources"] = []
+    #                 # Add optional fields if they exist
+    #                 if step.query:
+    #                     step_data["query"] = step.query
+    #                 if step.category:
+    #                     step_data["category"] = step.category
+    #                 if step.sources:
+    #                     try:
+    #                         step_data["sources"] = json.loads(step.sources)
+    #                     except:
+    #                         step_data["sources"] = []
                     
-                    reasoning_steps.append(step_data)
+    #                 reasoning_steps.append(step_data)
         
-        result.append({
-            "id": str(m.id),
-            "role": m.role,
-            "content": m.content,
-            "has_file": m.has_file,
-            "created_at": m.created_at.isoformat(),
-            "sources": json.loads(m.sources) if m.sources else None,
-            "reasoning_steps": reasoning_steps,  # From ReasoningStep table
-            "assets": json.loads(m.assets) if m.assets else None,
-            "app": m.app,
-            "lab_mode": m.lab_mode,
-             "status": m.status,
-            "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
-        })
+    #     result.append({
+    #         "id": str(m.id),
+    #         "role": m.role,
+    #         "content": m.content,
+    #         "has_file": m.has_file,
+    #         "created_at": m.created_at.isoformat(),
+    #         "sources": json.loads(m.sources) if m.sources else None,
+    #         "reasoning_steps": reasoning_steps,  # From ReasoningStep table
+    #         "assets": json.loads(m.assets) if m.assets else None,
+    #         "app": m.app,
+    #         "lab_mode": m.lab_mode,
+    #          "status": m.status,
+    #         "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
+    #     })
     
-    return result
+    # return result
     
 @app.delete("/conversations/{conversation_id}")
 async def delete_conversation(
@@ -3786,4 +3800,4 @@ async def root():
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
 import uvicorn
-# uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
+uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")

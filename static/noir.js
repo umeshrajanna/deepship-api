@@ -124,8 +124,8 @@ async function login() {
     //     ? 'https://localhost:8082'
     //     : 'https://noirai-production.up.railway.app';
 
-    const API_URL = "https://www.deepship.dev"
-    // const API_URL = "http://127.0.0.1:8082"
+    // const API_URL = "https://www.deepship.dev"
+    const API_URL = "http://127.0.0.1:8082"
     console.log('🌐 Environment:', window.location.hostname);
     console.log('🔗 API URL:', API_URL);
     
@@ -3812,24 +3812,7 @@ async function sendMessage() {
                 // HANDLE REASONING - REFRESH LIST ON FIRST REASONING STEP
                 // ═══════════════════════════════════════
                 else if (parsed.type === 'reasoning') {
-
-                    console.log('');
-                    console.log('═══════════════════════════════════════');
-                    console.log('📥 REASONING EVENT RECEIVED');
-                    console.log('═══════════════════════════════════════');
-                    console.log('🔍 Current State:');
-                    console.log('   - newConversationId:', newConversationId);
-                    console.log('   - currentConversationId:', currentConversationId);
-                    console.log('   - currentUser exists?', !!currentUser);
-                    console.log('   - currentUser.token exists?', !!currentUser?.token);
-                    console.log('   - currentUser.token:', currentUser?.token?.substring(0, 20) + '...');
-                    console.log('   - conversationListUpdated:', conversationListUpdated);
-                    console.log('   - reasoningContent exists?', !!reasoningContent);
-                    console.log('   - Is first reasoning?', !reasoningContent);
-                    console.log('   - Reasoning content:', parsed.content?.substring(0, 100));
-                    console.log('═══════════════════════════════════════');
-
-                    // Create reasoning section if it doesn't exist
+                    
                     if (!reasoningContent) {
                         console.log('🆕 Creating NEW reasoning section (first reasoning step)');
                         
@@ -4005,6 +3988,7 @@ async function sendMessage() {
                         });
                         console.log('   Total unique sources collected so far:', collectedSources.length);
                     }
+                    
                     
                     // Add reasoning step to UI
                     const stepDiv = document.createElement('div');
@@ -5884,7 +5868,7 @@ function renderSourcesList(sources) {
     return sources.map(source =>{
         const url = typeof source === 'string' ? source : source.url;
         const title = typeof source === 'object' ? source.title || '' : '';
-        const snippet = typeof source === 'object' ? source.snippet || '' : '';
+        // const snippet = typeof source === 'object' ? source.snippet || '' : '';
         
         let domain = '';
         let displayUrl = url;
@@ -5900,16 +5884,17 @@ function renderSourcesList(sources) {
         }
         
         return `
-            <a href="${url}" target="_blank" class="source-card">
-                <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" 
-                     class="source-favicon" 
-                     alt=""
-                     onerror="this.style.display='none'">
-                <div class="source-info">
-                    <div class="source-card-title">${escapeHtml(title || domain || 'Source')}</div>
-                    <div class="source-card-description">${escapeHtml(snippet || displayUrl)}</div>
+     
+                <div class="source-card">
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" 
+                            class="source-favicon" 
+                            alt=""
+                            onerror="this.style.display='none'">
+                    <div class="source-details">
+                        <span> ${escapeHtml(title || domain || 'Source')} </span> 
+                        <a class="source-url" href="${url}" target="_blank" > ${escapeHtml(displayUrl)}  </a>
+                    </div>
                 </div>
-            </a>
         `;
     }).join('');
 }

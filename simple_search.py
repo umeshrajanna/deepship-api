@@ -237,7 +237,7 @@ The provided context has been extracted and filtered for relevance using cosine 
         # For snippets, allow requesting more sources
         system_prompt = f"""CURRENT DATE AND TIME: {current_date_str} at {current_time_str}
 
-Answer the question using the provided search snippets and your knowledge. Provide a detailed and comprehensive answer - elaborate on the information, connect ideas, and give specific details. If the snippets truly don't have enough information to answer the question adequately, reply ONLY with: NEED_MORE_SOURCES"""
+Answer the question using the provided search snippets and your knowledge. If the snippets TRULY don't have enough information to answer the question, reply ONLY with: NEED_MORE_SOURCES"""
     
     # Build messages array
     # Start with ALL conversation history (no truncation!)
@@ -679,7 +679,7 @@ async def simple_search_chat_agent(
         # Emit sources to frontend
         yield json.dumps({
             "type": "sources",
-            "urls": urls
+            "urls": all_search_results
         })
         
         print(f"[AGENT] Found {len(all_search_results)} search results")
