@@ -3399,7 +3399,7 @@ async def verify_magic_link(
     if not magic_link or datetime.now(timezone.utc) > magic_link.expires_at:
         # Redirect to frontend with error
         frontend_url = os.getenv("FRONTEND_URL")
-        frontend_url = "http://127.0.0.1:8082"
+        # frontend_url = "http://127.0.0.1:8082"
         print("UN-SUCCESSFUL")
         return RedirectResponse(url=f"{frontend_url}/?error=invalid_link")
      
