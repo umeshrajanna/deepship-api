@@ -3757,21 +3757,18 @@ body {
     top: 20px;
     right: 20px;
     z-index: 10003;
-    background: rgba(42, 42, 42, 0.9);
-    border: 1px solid rgba(255, 68, 68, 0.3);
+    background:#F6F5EF;
     color: #ff4444;
     padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 12px;
+    font-weight: 500;
     display: flex;
     align-items: center;
     gap: 8px;
     transition: all 0.3s;
-    font-family: 'Roboto Mono', monospace;
-    font-weight: 600;
     letter-spacing: 1px;
-    text-transform: uppercase;
     backdrop-filter: blur(10px);
 }
 
@@ -6082,35 +6079,6 @@ body {
     background:  #F6F5EF !important
 }
 
-.news-overlay-close {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10007 !important;  /* Above everything */
-    background: rgba(42, 42, 42, 0.9);
-    border: 1px solid rgba(255, 68, 68, 0.3);
-    color: #ff4444;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    font-family: 'Roboto Mono', monospace;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    backdrop-filter: blur(10px);
-}
-
-.news-overlay-close:hover {
-    background: rgba(255, 68, 68, 0.2);
-    border-color: #ff4444;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
-}
 
 .news-card {
     background: #F6F5EF ;
@@ -9218,6 +9186,28 @@ body:has(.conversations-panel.collapsed) .cloud-wizard-close-btn {
     border-color: rgba(255, 68, 68, 0.4);
 }
 
+
+.news-overlay-close-btn {
+    width: 32px;
+    height: 32px;
+    margin-top:50px;
+    margin-left:50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding:10px
+}
+
+.news-overlay-close-btn:hover {
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.4);
+}
+
 /* Panel Content */
 .use-cases-panel-content {
     min-width: 200px;
@@ -10589,4 +10579,9 @@ body.logged-in .use-cases-icon-btn {
 .news-selection-panel
 {
     width:200px !important
+}
+
+.news-overlay
+{
+    left:0
 }

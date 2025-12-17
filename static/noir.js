@@ -5733,7 +5733,45 @@ function renderNews(articles, category) {
     contentEl.appendChild(newsGrid);
 }
 
+// function createNewsCard(article, category) {
+//     const card = document.createElement('div');
+//     card.className = 'news-card';
+    
+//     let domain = 'Unknown Source';
+//     try {
+//         const url = new URL(article.link);
+//         domain = url.hostname.replace('www.', '');
+//     } catch (e) {}
+    
+//     const timeAgo = getTimeAgo(new Date(article.pubDate));
+//     const imageUrl = article.thumbnail || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"%3E%3Crect fill="%23242424" width="400" height="200"/%3E%3C/svg%3E';
+    
+//     card.innerHTML = `
+//         <img src="${imageUrl}" alt="${escapeHtml(article.title)}" class="news-image">
+//         <div class="news-card-content">
+//             <div class="news-card-header">
+//                 <div class="news-provider">${escapeHtml(domain)}</div>
+//                 <div class="news-time">${timeAgo}</div>
+//             </div>
+//             <div class="news-title">${escapeHtml(article.title)}</div>
+//             <div class="news-snippet">${escapeHtml(article.description || '')}</div>
+//             <div class="news-footer">
+//                 <span class="news-category-tag">${categoryData[category].name}</span>
+//                 <button class="news-read-btn" onclick="window.open('${escapeHtml(article.link)}', '_blank')">
+//                     Read More →
+//                 </button>
+//             </div>
+//         </div>
+//     `;
+    
+//     return card;
+// }
+
 function createNewsCard(article, category) {
+    if (!article.thumbnail || !article.title) {
+        return null;
+    }
+    
     const card = document.createElement('div');
     card.className = 'news-card';
     
@@ -5744,10 +5782,13 @@ function createNewsCard(article, category) {
     } catch (e) {}
     
     const timeAgo = getTimeAgo(new Date(article.pubDate));
-    const imageUrl = article.thumbnail || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"%3E%3Crect fill="%23242424" width="400" height="200"/%3E%3C/svg%3E';
+    const imageUrl = article.thumbnail;
     
     card.innerHTML = `
-        <img src="${imageUrl}" alt="${escapeHtml(article.title)}" class="news-image">
+        <img src="${imageUrl}" 
+             alt="${escapeHtml(article.title)}" 
+             class="news-image"
+             style="display: none;">
         <div class="news-card-content">
             <div class="news-card-header">
                 <div class="news-provider">${escapeHtml(domain)}</div>
@@ -5764,9 +5805,40 @@ function createNewsCard(article, category) {
         </div>
     `;
     
+    const img = card.querySelector('.news-image');
+    
+    // Timeout to remove card if image doesn't load in 8 seconds
+    const timeout = setTimeout(() => {
+        card.remove();
+    }, 8000);
+    
+    img.onload = function() {
+        clearTimeout(timeout);
+        
+        // Check if image has reasonable dimensions
+        if (this.naturalWidth < 100 || this.naturalHeight < 100) {
+            card.remove();
+            return;
+        }
+        
+        // Check aspect ratio (avoid weird shapes)
+        const aspectRatio = this.naturalWidth / this.naturalHeight;
+        if (aspectRatio > 10 || aspectRatio < 0.1) {
+            card.remove();
+            return;
+        }
+        
+        // Image is good - show it
+        this.style.display = 'block';
+    };
+    
+    img.onerror = function() {
+        clearTimeout(timeout);
+        card.remove();
+    };
+    
     return card;
 }
-
 function getTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
     const intervals = {
