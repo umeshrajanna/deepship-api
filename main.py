@@ -1561,21 +1561,23 @@ async def stream_response_celery(
                         ).first()
                         
                         if assistant_msg:
+                            reasoning_steps = json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None
                             assistant_msg.content = final_result.get("content", "")
                             assistant_msg.sources = json.dumps(final_result.get("sources")) if final_result.get("sources") else None
-                            # Don't save reasoning_steps here - they're already in ReasoningStep table
+                            assistant_msg.reasoning_steps= reasoning_steps
                             assistant_msg.assets = json.dumps(final_result.get("assets")) if final_result.get("assets") else None
                             assistant_msg.app = final_result.get("app")
                             assistant_msg.lab_mode = final_result.get("lab_mode", False)
                             assistant_msg.status = "complete"
                             db.commit()
                     else:
+                        reasoning_steps = json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None
                         assistant_msg = Message(
                             conversation_id=uuid.UUID(conversation_id),
                             role="assistant",
                             content=final_result.get("content", ""),
                             sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
-                            reasoning_steps=json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None,
+                            reasoning_steps= reasoning_steps,
                             assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
                             app=final_result.get("app"),
                             lab_mode=final_result.get("lab_mode", False),

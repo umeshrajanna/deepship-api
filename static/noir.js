@@ -124,8 +124,8 @@ async function login() {
     //     ? 'https://localhost:8082'
     //     : 'https://noirai-production.up.railway.app';
 
-    const API_URL = "https://www.deepship.dev"
-    // const API_URL = "http://127.0.0.1:8082"
+    // const API_URL = "https://www.deepship.dev"
+    const API_URL = "http://127.0.0.1:8082"
     console.log('🌐 Environment:', window.location.hostname);
     console.log('🔗 API URL:', API_URL);
     
@@ -1563,6 +1563,87 @@ function showSplitScreen(appHtml) {
     
     // Setup app selector
     setupSplitAppSelector();
+
+    // Re-attach tab click handlers to the copied tabs
+        splitMessages.querySelectorAll('.response-tab').forEach(tab => {
+            // Remove existing listeners by cloning
+            const newTab = tab.cloneNode(true);
+            tab.parentNode.replaceChild(newTab, tab);
+            
+            newTab.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Save scroll position
+                const currentScrollTop = splitMessages ? splitMessages.scrollTop : 0;
+                
+                const messageDiv = this.closest('.message');
+                const tabs = messageDiv.querySelectorAll('.response-tab');
+                const tabContents = messageDiv.querySelectorAll('.tab-content');
+                const targetTab = this.dataset.tab;
+                
+                console.log('🔘 Tab clicked in split view:', targetTab);
+                
+                // Special handling for Apps tab in split mode
+                if (targetTab === 'apps') {
+                    const firstTabContent = messageDiv.querySelector('[id^="answer-tab-"]');
+                    if (firstTabContent) {
+                        const uniqueId = firstTabContent.id.split('-').pop();
+                        const appsTab = messageDiv.querySelector(`#apps-tab-${uniqueId}`);
+                        const iframe = appsTab ? appsTab.querySelector('iframe[id^="app-preview-iframe-"]') : null;
+                        
+                        if (iframe) {
+                            const msgId = iframe.id.replace('app-preview-iframe-', '');
+                            
+                            if (window.appsData && window.appsData[msgId]) {
+                                const apps = window.appsData[msgId];
+                                const appHtml = Array.isArray(apps) ? apps[0] : apps;
+                                
+                                console.log('📱 Updating split screen app preview');
+                                loadAppInSplit(appHtml);
+                                currentAppHtml = appHtml;
+                                updateSplitAppSelector(msgId);
+                                
+                                // Restore scroll
+                                if (splitMessages) {
+                                    splitMessages.scrollTop = currentScrollTop;
+                                }
+                                return;
+                            }
+                        }
+                    }
+                }
+                
+                // Normal tab switching for other tabs
+                console.log('✅ Switching to tab:', targetTab);
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                this.classList.add('active');
+                
+                const firstTabContent = messageDiv.querySelector('[id^="answer-tab-"]');
+                if (firstTabContent) {
+                    const uniqueId = firstTabContent.id.split('-').pop();
+                    const targetContent = messageDiv.querySelector(`#${targetTab}-tab-${uniqueId}`);
+                    
+                    console.log('Looking for content:', `#${targetTab}-tab-${uniqueId}`);
+                    console.log('Found content:', !!targetContent);
+                    
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                        console.log('✅ Content activated');
+                    } else {
+                        console.error('❌ Content not found!');
+                    }
+                }
+                
+                // Restore scroll position
+                if (splitMessages) {
+                    splitMessages.scrollTop = currentScrollTop;
+                }
+            });
+        });
 }
 function setupSplitAppSelector() {
     const appSelector = document.getElementById('split-app-selector');
@@ -1827,6 +1908,8 @@ function loadAppInSplit(htmlContent) {
                             margin: 0 auto;
                             color: #333;
                             background: #F6F5EF;
+                            font-size: 14px;
+                            
                         }
                         h1, h2, h3, h4, h5, h6 {
                             margin-top: 24px;
@@ -3606,6 +3689,7 @@ function updateSendButtonState() {
 // Check every 500ms
 setInterval(updateSendButtonState, 500);
 async function sendMessage() {
+
     const input = document.getElementById('message-input');
     const content = input.value.trim();
  
@@ -3690,6 +3774,7 @@ async function sendMessage() {
     console.log('Initial State:');
     console.log('   - currentUser:', currentUser);
     console.log('   - currentUser exists?', !!currentUser);
+    
     console.log('   - currentUser.token:', currentUser?.token?.substring(0, 20) + '...');
     console.log('   - currentConversationId:', currentConversationId);
     console.log('   - conversationListUpdated:', conversationListUpdated);
@@ -3698,6 +3783,7 @@ async function sendMessage() {
     try {
         const headers = {};
         const token = localStorage.getItem('access_token');
+        console.log(token)
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
             console.log('✅ Authorization token added to headers');
@@ -5432,7 +5518,7 @@ function getCookie(name) {
 }
 
 window.addEventListener('load', async () => { 
- 
+     
     document.querySelectorAll('.mode-icon-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
 
@@ -5475,7 +5561,7 @@ window.addEventListener('load', async () => {
         console.log('User ID:', userId);
         console.log('Username:', username);
         console.log('Email:', email);
-        
+         
         localStorage.setItem('access_token', token);
         localStorage.setItem('user_id', userId);
         localStorage.setItem('username', username);

@@ -276,6 +276,7 @@ body {
     width: 6px;
 }
 
+/* 
 .messages::-webkit-scrollbar-track {
     background: transparent;
 }
@@ -283,7 +284,7 @@ body {
 .messages::-webkit-scrollbar-thumb {
     background: var(--neon-cyan);
     box-shadow: 0 0 5px var(--glow-cyan);
-}
+} */
 
 /* .messages {
     flex: 1;
@@ -1454,12 +1455,12 @@ body {
   
 
 .messages::-webkit-scrollbar-thumb {
-    background: #3a3a3a;  /* Lighter gray for visibility */
+    background: #3a3a3a;  
     border-radius: 4px;
 }
 
 .messages::-webkit-scrollbar-thumb:hover {
-    background: #4a4a4a;  /* Even lighter on hover */
+    background: #4a4a4a;  
 }
 
 /* Control panel scrollbar */
@@ -10148,6 +10149,7 @@ body.logged-in .use-cases-icon-btn {
         display: block;
     }
 
+ 
     .split-left .messages {
     margin-left: 0 !important;
     padding-left: 10px !important;
@@ -10222,13 +10224,20 @@ body.logged-in .use-cases-icon-btn {
         display: block !important;
         margin-right: 10px;
     }
-    .split-right .split-tab-content iframe,
-    .split-right #split-preview-iframe {
+    
+    #split-preview-iframe {
         position: absolute !important;
-        width: 100% !important;
+        width: 95% !important;
         height: 100% !important;
         display: block;
-        border: none !important
+        overflow-y: hidden;
+        /* scrollbar-width: 2px !important; */
+    }
+
+    .split-tab-content iframe
+    {
+        width:50% !important;
+        overflow-y:hidden !important;
     }
 }
 
@@ -10666,13 +10675,18 @@ body.logged-in .use-cases-icon-btn {
     padding-bottom: 20px;
     margin-bottom: calc(200px + env(safe-area-inset-bottom)) !important
 }
- 
-.input-area {
-    display: flex;
-    flex-direction: column !important;
-    align-items: center;  
-    position: relative;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    position: relative;
+  
+.split-left::-webkit-scrollbar-thumb
+{
+    background: darkgray;
+}
+  
+::-webkit-scrollbar-thumb
+{
+    width: 6px !important;
+}
+
+.split-preview-iframe
+{
+    border: none !important;
 }
