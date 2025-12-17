@@ -5726,7 +5726,10 @@ function renderNews(articles, category) {
     
     articles.forEach(article => {
         const card = createNewsCard(article, category);
-        newsGrid.appendChild(card);
+        if(card)
+        {
+            newsGrid.appendChild(card);
+        }
     });
     
     contentEl.innerHTML = '';
