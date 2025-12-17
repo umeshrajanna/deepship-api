@@ -10436,7 +10436,7 @@ body.logged-in .use-cases-icon-btn {
 {
     position: relative;
     top:60px !important;
-    border:2px solid red !important;
+    border:2px  !important;
 }
 
 .query-sources-grid
@@ -10569,11 +10569,6 @@ body.logged-in .use-cases-icon-btn {
     border-radius: 6px;
     align-items: center;
     font-weight: 400;
-}
- 
-.messages
-{
-    border: 1px solid red !important;
 }
 
 .news-selection-panel
