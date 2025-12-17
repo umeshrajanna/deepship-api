@@ -6009,7 +6009,7 @@ body {
   position: fixed;
     left: -15%;
     top: 0;
-    width: 15%;
+    /* width: 15%; */
     height: 100vh;
     background: #FFFFFF;
     border-right: 1px solid #E8E6DC;
@@ -10584,4 +10584,9 @@ body.logged-in .use-cases-icon-btn {
 .messages
 {
     border: 1px solid red !important;
+}
+
+.news-selection-panel
+{
+    width:200px !important
 }
