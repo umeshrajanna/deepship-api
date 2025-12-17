@@ -72,7 +72,16 @@ class EmailService:
                 "html": html_content,
             }
             
-            email_response = resend.Emails.send(params)
+            import time
+            # email_response = resend.Emails.send(params)
+            for i in range(3):
+                try:
+                    email_response = resend.Emails.send(params)
+                    break
+                except:
+                    if i == 2: raise
+                    time.sleep(2 ** i)
+
             print(f"✅ Email sent: {email_response}")
             
             return True

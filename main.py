@@ -3419,7 +3419,7 @@ async def verify_magic_link(
     # Redirect to frontend with credentials
     frontend_url = os.getenv("FRONTEND_URL")
     redirect_url = (
-        f"{frontend_url}/"
+        f"{frontend_url}"
         f"?oauth_success=true"
         f"&token={access_token}"
         f"&user_id={user.id}"

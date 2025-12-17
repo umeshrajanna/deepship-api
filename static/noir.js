@@ -412,7 +412,7 @@ function createConversationItem(conv) {
     div.dataset.id = conv.id;
     
     div.innerHTML = `
-        <span class="conversation-title">${escapeHtml(conv.title)}</span>
+        <span class="conversation-title">${escapeHtml(conv.title).substring(0,35) + "..."}</span>
         <button class="delete-btn" onclick="deleteConversation('${conv.id}', event)">×</button>
     `;
     
@@ -6453,7 +6453,7 @@ function createPanelConversationItem(conv) {
     div.dataset.id = conv.id;
     
     div.innerHTML = `
-        <span class="conversation-title">${escapeHtml(conv.title)}</span>
+        <span class="conversation-title">${escapeHtml(conv.title).substring(0,35) + "..."}</span>
         <button class="delete-btn" onclick="deleteConversationFromPanel('${conv.id}', event)">×</button>
     `;
     
