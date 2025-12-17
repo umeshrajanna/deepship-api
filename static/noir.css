@@ -10586,10 +10586,29 @@ body.logged-in .use-cases-icon-btn {
     left:0
 }
 
-
 .news-overlay-close-btn
 {
     padding-left: 5px !important;
     padding-right: 5px !important;
     background : rgba(255, 68, 68, 0.2) !important
+}
+
+.news-overlay-close-btn {
+    width: 100px;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid #E8A87C;
+    color: black;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
