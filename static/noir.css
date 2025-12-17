@@ -3046,17 +3046,18 @@ body.logged-in .panel-section:has(.premium-card) {
 
 /* Attached files - separate container above input */
 .attached-files {
+    position: relative;
     display: none;
     flex-wrap: nowrap !important;
     gap: 8px;
     margin-bottom: 12px;  /* Space between attachments and input */
     width: 100%;  /* Match input width */
-    align-self: center;  /* Center in the container */
+    /* align-self: center; */
     padding: 0;  /* Remove any padding */
      
-    left:15vh;
+    /* left:15vh; */
     overflow-x: auto;
-overflow-y: hidden;  /* No vertical scroll */
+    overflow-y: hidden;  /* No vertical scroll */
 }
 
 .attached-files.has-files {
@@ -10152,6 +10153,19 @@ body.logged-in .use-cases-icon-btn {
     max-width: 100% !important;
     min-width: 100% !important;
 }
+
+     .input-area {
+        /* width:100% !important; */
+        /* min-width: 40%;
+        max-width: 40%; */
+        display: flex;
+        flex-direction: column;
+        align-items: center;  
+        position: relative;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
 }
 
 @media(min-width:1200px)
