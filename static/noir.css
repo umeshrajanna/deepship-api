@@ -10658,6 +10658,7 @@ body.logged-in .use-cases-icon-btn {
 
 .messages
 {
+    padding-bottom: 20px;
     margin-bottom: calc(200px + env(safe-area-inset-bottom)) !important
 }
 
