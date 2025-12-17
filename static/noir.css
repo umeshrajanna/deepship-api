@@ -9931,6 +9931,8 @@ body.logged-in .use-cases-icon-btn {
     width: 100%;
     margin: 0 auto;
     display: flex;
+    flex-direction: column;
+    position: relative;
     justify-content: center;
     align-items: flex-start;
     box-sizing: border-box; 
@@ -10672,4 +10674,5 @@ body.logged-in .use-cases-icon-btn {
     position: relative;
     border-radius: 12px;
     margin-bottom: 10px;
+    position: relative;
 }
