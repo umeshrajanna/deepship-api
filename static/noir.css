@@ -1630,7 +1630,7 @@ body.logged-in .panel-section:has(.conversations) {
     position: relative; 
     justify-content: center;
     align-items: center;
-    border:1px solid blue
+    
 }
  
 
@@ -7997,18 +7997,18 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 .premium-popup-modal {
     position: fixed;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.9);
+     left: 50%;
+    /* transform: translate(-50%, -50%) scale(0.9); */
     width: 90%;
-    max-width: 500px;
+    /* max-width: 500px; */
     background: #1a1a1a;
     border: 1px solid rgba(212, 165, 116, 0.3);
     border-radius: 16px;
     z-index: 9999;
     opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    /* visibility: hidden; */
+    /* transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); */
+    /* box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); */
 }
 
 .premium-popup-modal.active {
@@ -9689,7 +9689,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
 }
 
 /* Premium Popup Modal */
-.premium-popup-modal {
+/* .premium-popup-modal {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -9705,7 +9705,7 @@ body:not(.logged-in) .mode-icon-btn[data-mode="voice"]:hover {
     padding: 28px 21px;
     display: none;
     box-shadow: 0 14px 42px rgba(0, 0, 0, 0.5);
-}
+} */
 
 /* Hide scrollbar completely */
 .premium-popup-modal::-webkit-scrollbar {
@@ -10043,7 +10043,7 @@ body.logged-in .use-cases-icon-btn {
         /* margin-bottom: 200px !important; */
         margin-bottom: calc(200px + env(safe-area-inset-bottom))
     }
-    
+   
 } 
 
   @media (min-width: 700px) {
@@ -10612,3 +10612,41 @@ body.logged-in .use-cases-icon-btn {
     justify-content: center;
     gap: 6px;
 }
+
+ @media (min-width: 300px) and (max-width: 699px) {
+    .premium-popup-modal
+    {
+        display: flex !important;
+        overflow-y: auto;
+        height: 50%;
+        flex-direction: column !important;
+    }
+
+    .premium-popup-header
+    {
+        display: flex !important;
+        flex-direction: column;
+    }
+
+    .premium-popup-content
+    {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .premium-packages
+    {
+        display: flex !important; 
+        flex-direction: column !important;
+        justify-content: center;
+        align-items: center;
+        
+    }
+
+    .premium-package
+    {
+        padding:20px
+    }
+    
+} 
