@@ -10618,7 +10618,7 @@ body.logged-in .use-cases-icon-btn {
     {
         display: flex !important;
         overflow-y: auto;
-        height: 80%;
+        height: 90%;
         flex-direction: column !important;
     }
 
