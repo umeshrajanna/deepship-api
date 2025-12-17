@@ -10051,7 +10051,7 @@ body.logged-in .use-cases-icon-btn {
         max-width: 100%!important;
         overflow-y: auto !important;
         /* margin-bottom: 200px !important; */
-        padding-bottom: calc(200px + env(safe-area-inset-bottom))
+        margin-bottom: calc(200px + env(safe-area-inset-bottom))
     }
     
 } 
@@ -10065,7 +10065,7 @@ body.logged-in .use-cases-icon-btn {
         max-width: 640px!important;
         overflow-y: auto !important;
         /* margin-bottom: 200px !important; */
-        padding-bottom: calc(200px + env(safe-area-inset-bottom))
+        margin-bottom: calc(200px + env(safe-area-inset-bottom))
     } 
     
  }
