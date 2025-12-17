@@ -124,8 +124,8 @@ async function login() {
     //     ? 'https://localhost:8082'
     //     : 'https://noirai-production.up.railway.app';
 
-    const API_URL = "https://www.deepship.dev"
-    // const API_URL = "http://127.0.0.1:8082"
+    // const API_URL = "https://www.deepship.dev"
+    const API_URL = "http://127.0.0.1:8082"
     console.log('🌐 Environment:', window.location.hostname);
     console.log('🔗 API URL:', API_URL);
     
@@ -4099,7 +4099,7 @@ async function sendMessage() {
                 container.scrollTop = container.scrollHeight;
             }
         }
-
+            
         // ✅ BACKUP REFRESH: Final check after stream closes
         if (newConversationId && currentUser && !conversationListUpdated) {
             console.log('');

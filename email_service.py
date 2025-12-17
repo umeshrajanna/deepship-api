@@ -9,8 +9,8 @@ class EmailService:
         """Send magic link email using Resend"""
         try:
             # frontend_url = "https://noirai-production.up.railway.app/" #os.getenv("https://noirai-production.up.railway.app/", "http://localhost:5500")
-            # frontend_url = "http://127.0.0.1:8082/"
-            frontend_url = "https://www.deepship.dev/"
+            frontend_url = os.getenv("FRONTEND_URL")
+            # frontend_url = "https://www.deepship.dev/"
             magic_link = f"{frontend_url}verify?token={token}"
             
             html_content = f"""
