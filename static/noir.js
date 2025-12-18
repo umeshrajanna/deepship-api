@@ -124,8 +124,8 @@ async function login() {
     //     ? 'https://localhost:8082'
     //     : 'https://noirai-production.up.railway.app';
 
-    // const API_URL = "https://www.deepship.dev"
-    const API_URL = "http://127.0.0.1:8082"
+    const API_URL = "https://www.deepship.dev"
+    // const API_URL = "http://127.0.0.1:8082"
     console.log('🌐 Environment:', window.location.hostname);
     console.log('🔗 API URL:', API_URL);
     
@@ -6540,8 +6540,15 @@ function closeConversationsPanel() {
     document.getElementById('conversations-selection-panel').classList.remove('active');
     document.getElementById('conversations-panel-backdrop').classList.remove('active');
 
-      const panel = document.getElementById('conversations-selection-panel');
+    const panel = document.getElementById('conversations-selection-panel');
     const backdrop = document.getElementById('conversations-panel-backdrop');
+    
+    if (panel) {
+        panel.classList.remove('active');
+    }
+    if (backdrop) {
+        backdrop.classList.remove('active');
+    }
     
     if (panel && backdrop) {
         panel.classList.remove('active');
@@ -8290,6 +8297,7 @@ document.addEventListener('DOMContentLoaded', function() {
          const panel = document.querySelector('.conversations-panel');
         if (panel) {
             const wasCollapsed = panel.classList.contains('collapsed');
+          
             if(!wasCollapsed)
             {
                 panel.classList.toggle('collapsed');
@@ -8406,7 +8414,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('news-panel-backdrop') ||
             e.target.classList.contains('login-panel-backdrop') ||
-            e.target.classList.contains('conversations-panel-backdrop') ||
+            // e.target.classList.contains('conversations-panel-backdrop') ||
             e.target.classList.contains('use-cases-panel-backdrop') ||
             e.target.classList.contains('cloud-wizard-backdrop') ||
             e.target.classList.contains('premium-popup-backdrop')) {
