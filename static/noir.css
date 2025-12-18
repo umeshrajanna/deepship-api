@@ -1713,6 +1713,7 @@ body.logged-in .panel-section:has(.premium-card) {
 } */
 
 .response-tab {
+    max-width: 100px;
     padding: 4px 4px;
     background: #174236;
     border: none;
