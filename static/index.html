@@ -125,7 +125,8 @@
 
 
    <div class="container">
-<div class="conversations-panel" >
+
+<div  id="main-panel" class="conversations-panel" >
     <!-- Auth Section -->
     <div class="panel-section" id="auth-section">
         <button class="main-panel-close-btn" id="main-panel-close-btn" title="Close" onclick="toggleConversationsPanel()">
@@ -208,12 +209,15 @@
       <div class="conversations" id="conversations"></div>            
     </div> -->
 </div>
+ 
 <div class="chat-area" id="chat-area">
     
     <div class="messages" id="messages"></div>
 
 <div class="input-area">
+    <span class="greeting" id="greeting"></span>
     <div class="input-container">
+        
        <div class="input-wrapper">
     <textarea 
         id="message-input" 

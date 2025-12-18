@@ -80,6 +80,10 @@ async function login() {
             localStorage.setItem('user_id', data.user_id);
             localStorage.setItem('username', data.username);
             
+            
+            greeting = document.getElementById('greeting')
+            greeting.innerHTML = data.username
+            
             currentUser = {
                 user_id: data.user_id,
                 email: data.email,
@@ -8294,7 +8298,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Close all panels function
     function closeAllPanels() {
-         const panel = document.querySelector('.conversations-panel');
+        
+        const panel = document.querySelector('.conversations-panel');
         if (panel) {
             const wasCollapsed = panel.classList.contains('collapsed');
           
@@ -8303,11 +8308,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 panel.classList.toggle('collapsed');
             }
         }
+
         document.querySelectorAll('.news-selection-panel, .news-overlay, .login-panel, .conversations-selection-panel, .use-cases-selection-panel, .use-cases-overlay, .cloud-wizard-panel, .premium-popup-modal, .control-panel').forEach(panel => {
             panel.classList.remove('active', 'mobile-active');
         });
         
-        document.querySelectorAll('.news-panel-backdrop, .login-panel-backdrop, .conversations-panel-backdrop, .use-cases-panel-backdrop, .cloud-wizard-backdrop, .premium-popup-backdrop').forEach(backdrop => {
+        document.querySelectorAll( '.news-panel-backdrop, .login-panel-backdrop, .conversations-panel-backdrop, .use-cases-panel-backdrop, .cloud-wizard-backdrop, .premium-popup-backdrop').forEach(backdrop => {
             backdrop.classList.remove('active');
         });
     }
@@ -8410,6 +8416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+ 
     // Click backdrops to close
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('news-panel-backdrop') ||
