@@ -1529,7 +1529,7 @@ async def stream_response_celery(
                             "step": "Sources Found",
                             "content": data.get("content", ""),
                             "found_sources": None,
-                            "sources": None,
+                            "sources":   data.get("sources"),
                             "query": data.get("query",""),
                             "category": "Task completed",
                             "timestamp": datetime.now(timezone.utc).isoformat()
@@ -1595,7 +1595,7 @@ async def stream_response_celery(
                             role="assistant",
                             content=final_result.get("content", ""),
                             sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
-                            reasoning_steps= final_reasoning_steps,
+                            reasoning_steps= json.dumps(final_reasoning_steps),
                             assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
                             app=final_result.get("app"),
                             lab_mode=final_result.get("lab_mode", False),
@@ -1618,7 +1618,7 @@ async def stream_response_celery(
                         await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
                     
                     # Yield done signal
-                    yield json.dumps({"type": "done"}) + "\n"
+                    yield json.dumps({"type": "done", "convid":str(conv.id), "convtitle":conv.title}) + "\n"
                     break
                 
                 elif msg_type == "error":
