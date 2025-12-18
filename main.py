@@ -1039,6 +1039,7 @@ async def send_chat_message_stream(
             }
         )
     else:
+        
         return StreamingResponse(
             stream_response_direct(newConversation, message, conversation_id, conv, files, db),
             media_type="text/plain",
@@ -1294,7 +1295,7 @@ async def stream_response_direct(
         if conversation_manager.redis:
             await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
         
-        yield json.dumps({"type": "done"}) + "\n"
+        yield json.dumps({"type": "done", "convid":str(conv.id), "convtitle":conv.title}) + "\n"
         
     except Exception as e:
         logger.error(f"Stream error: {e}", exc_info=True)
@@ -1367,6 +1368,8 @@ async def stream_response_celery(
 ):
     assistant_msg_id = None
     reasoning_step_counter = 0
+    
+    final_reasoning_steps = []
     
     try:
         # Process uploaded files
@@ -1519,6 +1522,21 @@ async def stream_response_celery(
                             sources=json.dumps(data.get("sources")) if data.get("sources") else None,
                             created_at=datetime.now(timezone.utc)
                         )
+                         
+                         
+                        step = {
+                            "type": "reasoning",
+                            "step": "Sources Found",
+                            "content": data.get("content", ""),
+                            "found_sources": None,
+                            "sources": None,
+                            "query": data.get("query",""),
+                            "category": "Task completed",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        
+                        final_reasoning_steps.append(step)
+                        
                         db.add(reasoning_step)
                         db.commit()
                         reasoning_step_counter += 1
@@ -1564,7 +1582,7 @@ async def stream_response_celery(
                             reasoning_steps = json.dumps(final_result.get("reasoning_steps")) if final_result.get("reasoning_steps") else None
                             assistant_msg.content = final_result.get("content", "")
                             assistant_msg.sources = json.dumps(final_result.get("sources")) if final_result.get("sources") else None
-                            assistant_msg.reasoning_steps= reasoning_steps
+                            assistant_msg.reasoning_steps= json.dumps(final_reasoning_steps)
                             assistant_msg.assets = json.dumps(final_result.get("assets")) if final_result.get("assets") else None
                             assistant_msg.app = final_result.get("app")
                             assistant_msg.lab_mode = final_result.get("lab_mode", False)
@@ -1577,7 +1595,7 @@ async def stream_response_celery(
                             role="assistant",
                             content=final_result.get("content", ""),
                             sources=json.dumps(final_result.get("sources")) if final_result.get("sources") else None,
-                            reasoning_steps= reasoning_steps,
+                            reasoning_steps= final_reasoning_steps,
                             assets=json.dumps(final_result.get("assets")) if final_result.get("assets") else None,
                             app=final_result.get("app"),
                             lab_mode=final_result.get("lab_mode", False),

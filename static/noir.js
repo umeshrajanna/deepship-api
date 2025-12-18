@@ -79,11 +79,7 @@ async function login() {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('user_id', data.user_id);
             localStorage.setItem('username', data.username);
-            
-            
-            greeting = document.getElementById('greeting')
-            greeting.innerHTML = data.username
-            
+             
             currentUser = {
                 user_id: data.user_id,
                 email: data.email,
@@ -594,9 +590,11 @@ async function selectConversation(id) {
     }
     
     const container = getActiveMessagesContainer();
+
     if (container) {
         setTimeout(() => {
-            container.scrollTop = 0;
+            const lastItem = container.lastElementChild;
+            container.scrollTop = lastItem.offsetTop;
         }, 100);
     }
     
@@ -4106,7 +4104,10 @@ async function sendMessage() {
                     console.log('🏁 DONE event received');
                     streamingDiv.classList.remove('streaming-message');
                     setStreamingToDone(streamingDiv);
+                    loadConversations()
                     
+                    selectConversation(parsed.convid, parsed.convtitle)
+
                     // ✅ FINAL REFRESH: In case no reasoning was sent (normal mode)
                     if (currentUser && newConversationId && !conversationListUpdated) {
                         console.log('');
@@ -4124,6 +4125,7 @@ async function sendMessage() {
                             });
                         }, 100);
                     }
+ 
                 }
                 
                 // Handle error
