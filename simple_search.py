@@ -19,39 +19,39 @@ async def google_search(query, start=0):
     # """Google search using SerpAPI"""
     # print(f"[DEBUG] Searching Google for: '{query}'")
     
-    # results = []    
-    # try:        
-    #     params = {
-    #         "engine": "google",
-    #         "q": query,
-    #         "api_key": "c65412e924d81ecb726a7c013ae0f04897bc8d069e8acadc5a085d9198e64d22",
-    #         "num": 10,
-    #         "start": start,
-    #     }
+    results = []    
+    try:        
+        params = {
+            "engine": "google",
+            "q": query,
+            "api_key": "c65412e924d81ecb726a7c013ae0f04897bc8d069e8acadc5a085d9198e64d22",
+            "num": 10,
+            "start": start,
+        }
         
-    #     search = GoogleSearch(params)
-    #     search_dict = search.get_dict()
-    #     items = search_dict.get("organic_results")
+        search = GoogleSearch(params)
+        search_dict = search.get_dict()
+        items = search_dict.get("organic_results")
         
-    #     if not items:
-    #         print(f"[DEBUG] No search results found")
-    #         return results
+        if not items:
+            print(f"[DEBUG] No search results found")
+            return results
             
-    #     for item in items:
-    #         if item.get("link"):
-    #             res = {
-    #                 "url": item["link"], 
-    #                 "snippet": item.get("snippet", ""),
-    #                 "title": item.get("title", "")
-    #             }
-    #             results.append(res)
+        for item in items:
+            if item.get("link"):
+                res = {
+                    "url": item["link"], 
+                    "snippet": item.get("snippet", ""),
+                    "title": item.get("title", "")
+                }
+                results.append(res)
         
-    #     print(f"[DEBUG] Found {len(results)} search results")
+        print(f"[DEBUG] Found {len(results)} search results")
   
-    # except Exception as e:
-    #     print(f"[DEBUG] Search error: {str(e)}")
+    except Exception as e:
+        print(f"[DEBUG] Search error: {str(e)}")
     
-    # return results
+    return results
     
     """Google search using Google Custom Search API"""
     print(f"[DEBUG] Searching Google for: '{query}'")
