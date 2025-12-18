@@ -124,8 +124,8 @@ async function login() {
     //     ? 'https://localhost:8082'
     //     : 'https://noirai-production.up.railway.app';
 
-    const API_URL = "https://www.deepship.dev"
-    // const API_URL = "http://127.0.0.1:8082"
+    // const API_URL = "https://www.deepship.dev"
+    const API_URL = "http://127.0.0.1:8082"
     console.log('🌐 Environment:', window.location.hostname);
     console.log('🔗 API URL:', API_URL);
     
@@ -4175,6 +4175,7 @@ async function sendMessage() {
                                 showAuthError('Free message limit reached. Please sign in to continue with 10 messages per day!');
                             }
                         } else {
+                            streamingDiv.classList.remove('streaming-message');
                             responseContent.textContent = `Error: ${parsed.message || 'Unknown error'}`;
                             setStreamingToDone(streamingDiv);
                         }
@@ -4212,7 +4213,7 @@ async function sendMessage() {
         console.error('Error:', error);
         console.error('Stack:', error.stack);
         console.error('');
-        
+            streamingDiv.classList.remove('streaming-message');
         responseContent.textContent = 'Error: Failed to get response. Please check your connection.';
         setStreamingToDone(streamingDiv);
         
@@ -4225,6 +4226,7 @@ async function sendMessage() {
 }
 
 function setStreamingToDone(streamingDiv) {
+    
     const indicator = streamingDiv.querySelector('.streaming-indicator');
     if (indicator) {
         indicator.classList.add('done');
