@@ -10767,3 +10767,12 @@ body.logged-in .use-cases-icon-btn {
         word-wrap: break-word !important;
     } */
 }
+ 
+.conversations-panel-backdrop {
+    z-index: 9998 !important;
+    pointer-events: auto; /* ← Important! */
+}
+
+.conversations-selection-panel {
+    z-index: 9999 !important;
+}
