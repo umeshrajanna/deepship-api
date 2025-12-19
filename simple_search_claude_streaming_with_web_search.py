@@ -4,14 +4,51 @@ import json
 import base64
 from typing import List, Dict, Optional
 from fastapi import UploadFile
+from serpapi import GoogleSearch
 
 from dotenv import load_dotenv
 load_dotenv()
 
 class ClaudeConversation:
     
+    async def google_search(query, start=0):
+        
+        results = []    
+        try:        
+            params = {
+                "engine": "google",
+                "q": query,
+                "api_key": "c65412e924d81ecb726a7c013ae0f04897bc8d069e8acadc5a085d9198e64d22",
+                "num": 10,
+                "start": start,
+            }
+            
+            search = GoogleSearch(params)
+            search_dict = search.get_dict()
+            items = search_dict.get("organic_results")
+            
+            if not items:
+                print(f"[DEBUG] No search results found")
+                return results
+                
+            for item in items:
+                if item.get("link"):
+                    res = {
+                        "url": item["link"], 
+                        "snippet": item.get("snippet", ""),
+                        "title": item.get("title", "")
+                    }
+                    results.append(res)
+            
+            print(f"[DEBUG] Found {len(results)} search results")
+    
+        except Exception as e:
+            print(f"[DEBUG] Search error: {str(e)}")
+        
+        return results
+
     def __init__(self, api_key: Optional[str] = None, model: str = "claude-sonnet-4-20250514", messages: Optional[List[Dict]] = None):
-        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))        
+        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY",""))        
         
         self.model = model
         self.max_tokens = 16000
