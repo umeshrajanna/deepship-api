@@ -11,7 +11,7 @@ load_dotenv()
 
 class ClaudeConversation:
     
-    async def google_search(query, start=0):
+    async def google_search(self,query, start=0):
         
         results = []    
         try:        
