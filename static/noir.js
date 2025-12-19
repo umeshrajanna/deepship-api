@@ -442,7 +442,7 @@ async function loadConversations() {
     console.log('✅ User is logged in');
     console.log('   - currentUser.user_id:', currentUser.user_id);
     console.log('   - currentUser.email:', currentUser.email);
-    console.log('   - currentUser.token:', currentUser.token?.substring(0, 20) + '...');
+    console.log('   - currentUser.token:', currentUser.token? currentUser.token:"");
     
     try {
         const url = `${API_URL}/conversations`;
@@ -3312,13 +3312,30 @@ async function loadAssetsFromDB(conversationId, messageDiv, responseContent) {
 // File upload state
 let attachedFiles = [];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = {
-    'application/pdf': { ext: '.pdf', icon: '📄' },
-    'text/csv': { ext: '.csv', icon: '📊' },
-    'application/vnd.ms-excel': { ext: '.xls', icon: '📊' },
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { ext: '.xlsx', icon: '📊' },
-    'text/plain': { ext: '.txt', icon: '📝' }
-};
+// const ALLOWED_TYPES = {
+//     'application/pdf': { ext: '.pdf', icon: '📄' },
+//     'text/csv': { ext: '.csv', icon: '📊' },
+//     'application/vnd.ms-excel': { ext: '.xls', icon: '📊' },
+//     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { ext: '.xlsx', icon: '📊' },
+//     'text/plain': { ext: '.txt', icon: '📝' }
+// };
+
+ALLOWED_TYPES = {
+    'application/pdf': {'ext': '.pdf', 'icon': '📄'},
+    
+    'text/csv': {'ext': '.csv', 'icon': '📊'},
+    'application/vnd.ms-excel': {'ext': '.xls', 'icon': '📊'},
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {'ext': '.xlsx', 'icon': '📊'},
+    
+    'text/plain': {'ext': '.txt', 'icon': '📝'},
+    'text/html': {'ext': '.html', 'icon': '📝'},
+    'text/markdown': {'ext': '.md', 'icon': '📝'},
+    
+    'image/jpeg': {'ext': '.jpg', 'icon': '🖼️'},
+    'image/png': {'ext': '.png', 'icon': '🖼️'},
+    'image/gif': {'ext': '.gif', 'icon': '🖼️'},
+    'image/webp': {'ext': '.webp', 'icon': '🖼️'}
+}
 
 // File upload button click
 document.getElementById('file-upload-btn')?.addEventListener('click', () => {

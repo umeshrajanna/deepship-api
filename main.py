@@ -1074,125 +1074,125 @@ async def stream_response_direct(
         is_lab_mode = message.lab_mode
         is_deep_search = message.deep_search
         
-        if uploaded_files and len(uploaded_files) > 0:
+        # if uploaded_files and len(uploaded_files) > 0:
             
-            yield json.dumps({
-                "type": "reasoning",
-                "step": "File Processing",
-                "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }) + "\n"
-            await asyncio.sleep(0.2)
+        #     yield json.dumps({
+        #         "type": "reasoning",
+        #         "step": "File Processing",
+        #         "content": f"Processing {len(uploaded_files)} uploaded file(s)...",
+        #         "timestamp": datetime.now(timezone.utc).isoformat()
+        #     }) + "\n"
+        #     await asyncio.sleep(0.2)
             
-            for idx, file in enumerate(uploaded_files, 1):
-                try:
-                    content_bytes = await file.read()
-                    file_size_kb = len(content_bytes) / 1024
+        #     for idx, file in enumerate(uploaded_files, 1):
+        #         try:
+        #             content_bytes = await file.read()
+        #             file_size_kb = len(content_bytes) / 1024
                     
-                    if file.content_type == "application/pdf":
-                        import pdfplumber
-                        from io import BytesIO
+        #             if file.content_type == "application/pdf":
+        #                 import pdfplumber
+        #                 from io import BytesIO
                         
-                        text_content = ""
-                        try:
-                            with pdfplumber.open(BytesIO(content_bytes)) as pdf:
-                                for page_num, page in enumerate(pdf.pages, 1):
-                                    page_text = page.extract_text()
-                                    if page_text:
-                                        text_content += f"\n--- Page {page_num} ---\n{page_text}\n"
+        #                 text_content = ""
+        #                 try:
+        #                     with pdfplumber.open(BytesIO(content_bytes)) as pdf:
+        #                         for page_num, page in enumerate(pdf.pages, 1):
+        #                             page_text = page.extract_text()
+        #                             if page_text:
+        #                                 text_content += f"\n--- Page {page_num} ---\n{page_text}\n"
                             
-                            file_contents.append({
-                                "filename": file.filename,
-                                "type": "pdf",
-                                "pages": len(pdf.pages),
-                                "content": text_content[:10000]
-                            })
-                        except Exception as e:
-                            logger.error(f"[FILES] PDF extraction error: {e}")
-                            file_contents.append({
-                                "filename": file.filename,
-                                "type": "pdf",
-                                "content": f"Error extracting PDF: {str(e)}"
-                            })
+        #                     file_contents.append({
+        #                         "filename": file.filename,
+        #                         "type": "pdf",
+        #                         "pages": len(pdf.pages),
+        #                         "content": text_content[:10000]
+        #                     })
+        #                 except Exception as e:
+        #                     logger.error(f"[FILES] PDF extraction error: {e}")
+        #                     file_contents.append({
+        #                         "filename": file.filename,
+        #                         "type": "pdf",
+        #                         "content": f"Error extracting PDF: {str(e)}"
+        #                     })
                     
-                    elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
-                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
-                        import pandas as pd
-                        from io import BytesIO
+        #             elif file.content_type in ["text/csv", "application/vnd.ms-excel", 
+        #                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
+        #                 import pandas as pd
+        #                 from io import BytesIO
                         
-                        try:
-                            if file.content_type == "text/csv":
-                                df = pd.read_csv(BytesIO(content_bytes))
-                            else:
-                                df = pd.read_excel(BytesIO(content_bytes))
+        #                 try:
+        #                     if file.content_type == "text/csv":
+        #                         df = pd.read_csv(BytesIO(content_bytes))
+        #                     else:
+        #                         df = pd.read_excel(BytesIO(content_bytes))
                             
-                            summary = f"File: {file.filename}\n"
-                            summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
-                            summary += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
-                            summary += f"First 10 rows:\n{df.head(10).to_string()}\n\n"
+        #                     summary = f"File: {file.filename}\n"
+        #                     summary += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
+        #                     summary += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
+        #                     summary += f"First 10 rows:\n{df.head(10).to_string()}\n\n"
                             
-                            if len(df) > 10:
-                                summary += f"Summary Statistics:\n{df.describe().to_string()}"
+        #                     if len(df) > 10:
+        #                         summary += f"Summary Statistics:\n{df.describe().to_string()}"
                             
-                            file_contents.append({
-                                "filename": file.filename,
-                                "type": "tabular",
-                                "rows": len(df),
-                                "columns": len(df.columns),
-                                "content": summary[:10000]
-                            })
+        #                     file_contents.append({
+        #                         "filename": file.filename,
+        #                         "type": "tabular",
+        #                         "rows": len(df),
+        #                         "columns": len(df.columns),
+        #                         "content": summary[:10000]
+        #                     })
                             
-                        except Exception as e:
-                            logger.error(f"[FILES] Pandas error: {e}")
-                            file_contents.append({
-                                "filename": file.filename,
-                                "type": "unknown",
-                                "content": f"Error processing file: {str(e)}"
-                            })
+        #                 except Exception as e:
+        #                     logger.error(f"[FILES] Pandas error: {e}")
+        #                     file_contents.append({
+        #                         "filename": file.filename,
+        #                         "type": "unknown",
+        #                         "content": f"Error processing file: {str(e)}"
+        #                     })
                     
-                    elif file.content_type == "text/plain":
-                        try:
-                            text_content = content_bytes.decode('utf-8', errors='ignore')
-                            file_contents.append({
-                                "filename": file.filename,
-                                "type": "text",
-                                "content": text_content[:10000]
-                            })
-                            logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from text file")
-                        except Exception as e:
-                            logger.error(f"[FILES] Text file error: {e}")
-                            file_contents.append({
-                                "filename": file.filename,
-                                "type": "text",
-                                "content": f"Error reading text file: {str(e)}"
-                            })
+        #             elif file.content_type == "text/plain":
+        #                 try:
+        #                     text_content = content_bytes.decode('utf-8', errors='ignore')
+        #                     file_contents.append({
+        #                         "filename": file.filename,
+        #                         "type": "text",
+        #                         "content": text_content[:10000]
+        #                     })
+        #                     logger.info(f"[FILES] ✓ Extracted {len(text_content)} chars from text file")
+        #                 except Exception as e:
+        #                     logger.error(f"[FILES] Text file error: {e}")
+        #                     file_contents.append({
+        #                         "filename": file.filename,
+        #                         "type": "text",
+        #                         "content": f"Error reading text file: {str(e)}"
+        #                     })
                     
-                    else:
-                        logger.warning(f"[FILES] Unsupported file type: {file.content_type}")
-                        file_contents.append({
-                            "filename": file.filename,
-                            "type": "unsupported",
-                            "content": f"Unsupported file type: {file.content_type}"
-                        })
-                        continue
+        #             else:
+        #                 logger.warning(f"[FILES] Unsupported file type: {file.content_type}")
+        #                 file_contents.append({
+        #                     "filename": file.filename,
+        #                     "type": "unsupported",
+        #                     "content": f"Unsupported file type: {file.content_type}"
+        #                 })
+        #                 continue
                     
-                    # Send success notification
-                    yield json.dumps({
-                        "type": "reasoning",
-                        "step": f"File {idx} Processed",
-                        "content": f"✓ Extracted content from {file.filename}",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }) + "\n"
-                    await asyncio.sleep(0.1)
+        #             # Send success notification
+        #             yield json.dumps({
+        #                 "type": "reasoning",
+        #                 "step": f"File {idx} Processed",
+        #                 "content": f"✓ Extracted content from {file.filename}",
+        #                 "timestamp": datetime.now(timezone.utc).isoformat()
+        #             }) + "\n"
+        #             await asyncio.sleep(0.1)
                     
-                except Exception as e:
-                    logger.error(f"[FILES] Error processing {file.filename}: {e}", exc_info=True)
-                    yield json.dumps({
-                        "type": "reasoning",
-                        "step": f"File {idx} Error",
-                        "content": f"Failed to process {file.filename}: {str(e)}",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }) + "\n"
+        #         except Exception as e:
+        #             logger.error(f"[FILES] Error processing {file.filename}: {e}", exc_info=True)
+        #             yield json.dumps({
+        #                 "type": "reasoning",
+        #                 "step": f"File {idx} Error",
+        #                 "content": f"Failed to process {file.filename}: {str(e)}",
+        #                 "timestamp": datetime.now(timezone.utc).isoformat()
+        #             }) + "\n"
         
         metadata = json.dumps({
             "type": "metadata",
@@ -1215,49 +1215,84 @@ async def stream_response_direct(
         from simple_search import simple_search_chat_agent
         user_prompt = message.content
         
-        if file_contents:
-            user_prompt += "\n\n=== UPLOADED FILES ===\n"
-            for file_info in file_contents:
-                user_prompt += f"\n--- {file_info['filename']} ({file_info['type']}) ---\n"
-                user_prompt += file_info['content']
-                user_prompt += "\n" + "="*50 + "\n"
-            user_prompt += "\nPlease use the uploaded files content above in answering the prompt.\n\n"
+        # if file_contents:
+        #     user_prompt += "\n\n=== UPLOADED FILES ===\n"
+        #     for file_info in file_contents:
+        #         user_prompt += f"\n--- {file_info['filename']} ({file_info['type']}) ---\n"
+        #         user_prompt += file_info['content']
+        #         user_prompt += "\n" + "="*50 + "\n"
+        #     user_prompt += "\nPlease use the uploaded files content above in answering the prompt.\n\n"
         
-        async for results in simple_search_chat_agent(user_prompt, messages_list):
-            try:
-                data = json.loads(results)
+        # async for results in simple_search_chat_agent(user_prompt, messages_list):
+        #     try:
+        #         data = json.loads(results)
                 
-                # Handle transformed query
-                if data.get("type") == "transformed_query":
-                    text = data.get("query", "")                             
-                    transformed_query = text
+        #         # Handle transformed query
+        #         if data.get("type") == "transformed_query":
+        #             text = data.get("query", "")                             
+        #             transformed_query = text
                 
-                # Handle content streaming
-                if data.get("type") == "content":
-                    text = data.get("text", "")
-                    yield json.dumps({"type": "content", "text": text}) + "\n"
-                    full_response += text
+        #         # Handle content streaming
+        #         if data.get("type") == "content":
+        #             text = data.get("text", "")
+        #             yield json.dumps({"type": "content", "text": text}) + "\n"
+        #             full_response += text
                 
-                # Handle sources
-                if data.get("type") == "sources":
-                    urls = data.get("urls", [])
+        #         # Handle sources
+        #         if data.get("type") == "sources":
+        #             urls = data.get("urls", [])
                     
-                    step = {
-                        "type": "reasoning",
-                        "step": "Sources Found",
-                        "content": transformed_query,
-                        "found_sources": len(urls),
-                        "sources": urls,
-                        "query": transformed_query,
-                        "category": "Web Search",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }
-                    yield json.dumps(step) + "\n" 
-                    reasoning_steps.append(step)
-                    finalSources.append(urls)
+        #             step = {
+        #                 "type": "reasoning",
+        #                 "step": "Sources Found",
+        #                 "content": transformed_query,
+        #                 "found_sources": len(urls),
+        #                 "sources": urls,
+        #                 "query": transformed_query,
+        #                 "category": "Web Search",
+        #                 "timestamp": datetime.now(timezone.utc).isoformat()
+        #             }
+        #             yield json.dumps(step) + "\n" 
+        #             reasoning_steps.append(step)
+        #             finalSources.append(urls)
 
-            except Exception as e:
-                print(f"Exception while yielding -> {e}")
+        #     except Exception as e:
+        #         print(f"Exception while yielding -> {e}")
+        
+        from simple_search_claude_streaming_with_web_search import ClaudeConversation
+        claudeClient = ClaudeConversation(messages=messages_list)
+        
+        async for chunk in claudeClient.send_message(user_prompt,files=uploaded_files):
+            if chunk["type"] == "thinking":
+                print(f"\n🧠 [THINKING]\n{chunk['text']}", end="", flush=True)
+            elif chunk["type"] == "content":
+                print(chunk["text"], end="", flush=True)
+                full_response += chunk["text"]
+                yield json.dumps(chunk) + "\n"
+            elif chunk["type"] == "search_query":
+                query = chunk['text']
+                data = await claudeClient.google_search(query)
+
+                urls = [item["url"] for item in data]
+                    
+                step = {
+                    "type": "reasoning",
+                    "step": "Sources Found",
+                    "content": query,
+                    "found_sources": len(urls),
+                    "sources": urls,
+                    "query": query,
+                    "category": "Web Search",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                yield json.dumps(step) + "\n" 
+                reasoning_steps.append(step)
+                finalSources.append(urls)
+            
+            
+            # yield chunk
+        
+    
         user_msg = Message(
             conversation_id=uuid.UUID(conversation_id),
             role="user",
@@ -1294,6 +1329,7 @@ async def stream_response_direct(
         
         if conversation_manager.redis:
             await conversation_manager.redis.delete(f"conv:{conversation_id}:history")
+        
         
         yield json.dumps({"type": "done", "convid":str(conv.id), "convtitle":conv.title}) + "\n"
         
