@@ -40,6 +40,7 @@ async def google_search(query, start=0):
         for item in items:
             if item.get("link"):
                 res = {
+                    "query":query,
                     "url": item["link"], 
                     "snippet": item.get("snippet", ""),
                     "title": item.get("title", "")

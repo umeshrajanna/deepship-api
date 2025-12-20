@@ -1025,33 +1025,33 @@ async def send_chat_message_stream(
     # ===== ROUTE TO CELERY OR DIRECT =====
     use_celery = message.deep_search or message.lab_mode
     
-    if use_celery:
-        return StreamingResponse(
-            stream_response_celery(newConversation, message, conversation_id, conv, files, db),
-            media_type="text/plain",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*"
-            }
-        )
-    else:
+    # if use_celery:
+    #     return StreamingResponse(
+    #         stream_response_celery(newConversation, message, conversation_id, conv, files, db),
+    #         media_type="text/plain",
+    #         headers={
+    #             "Cache-Control": "no-cache",
+    #             "X-Accel-Buffering": "no",
+    #             "Connection": "keep-alive",
+    #             "Access-Control-Allow-Origin": "*",
+    #             "Access-Control-Allow-Methods": "POST, OPTIONS",
+    #             "Access-Control-Allow-Headers": "*"
+    #         }
+    #     )
+    # else:
         
-        return StreamingResponse(
-            stream_response_direct(newConversation, message, conversation_id, conv, files, db),
-            media_type="text/plain",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*"
-            }
-        )
+    return StreamingResponse(
+        stream_response_direct(newConversation, message, conversation_id, conv, files, db),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
 
 async def stream_response_direct(
     newConversation: bool,
@@ -1068,6 +1068,7 @@ async def stream_response_direct(
     search_content = ""
     full_response = ""
     app = None
+    report = None
     transformed_query = ""
  
     try:
@@ -1259,40 +1260,126 @@ async def stream_response_direct(
         #     except Exception as e:
         #         print(f"Exception while yielding -> {e}")
         
-        from simple_search_claude_streaming_with_web_search import ClaudeConversation
-        claudeClient = ClaudeConversation(messages=messages_list)
-        
-        async for chunk in claudeClient.send_message(user_prompt,files=uploaded_files):
-            if chunk["type"] == "thinking":
-                print(f"\n🧠 [THINKING]\n{chunk['text']}", end="", flush=True)
-            elif chunk["type"] == "content":
-                print(chunk["text"], end="", flush=True)
-                full_response += chunk["text"]
-                yield json.dumps(chunk) + "\n"
-            elif chunk["type"] == "search_query":
-                query = chunk['text']
-                data = await claudeClient.google_search(query)
+        if is_deep_search or is_lab_mode:
+            from simple_search_claude_streaming_with_web_search import ClaudeConversation
+            claudeClient = ClaudeConversation(messages=messages_list)
+            
+            deep_research = None
+            
+            if is_deep_search:
+                from deep_search_with_claude import DeepResearch
+                deep_research = DeepResearch(claudeClient)
+            elif is_lab_mode:
+                from lab_with_claude import DeepResearch
+                deep_research = DeepResearch(claudeClient)
+            
+            async for chunk in deep_research.research(user_prompt,files=uploaded_files):
+                if chunk["type"] == "thinking":
+                    print(f"\n🧠 [THINKING]\n{chunk['text']}", end="", flush=True)
+                elif chunk["type"] == "content":
+                    print(chunk["text"], end="", flush=True)
+                    full_response += chunk["text"]
+                    yield json.dumps(chunk) + "\n"
+                elif chunk["type"] == "reasoning":
+                    step = {
+                        "type": "reasoning",
+                        "step": "Reasoning...",
+                        "content": chunk["text"],
+                        "found_sources": None,
+                        "sources": None,
+                        "query": chunk["text"],
+                        "category": "Reasoning",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    yield json.dumps(step) + "\n" 
+                    reasoning_steps.append(step)
+                elif chunk["type"] == "search_query":
+                    query = chunk['text']
+                    data = await claudeClient.google_search(query)
 
-                urls = [item["url"] for item in data]
+                    urls = [item["url"] for item in data]
+                        
+                    step = {
+                        "type": "reasoning",
+                        "step": "Sources Found",
+                        "content": query,
+                        "found_sources": len(urls),
+                        "sources": urls,
+                        "query": query,
+                        "category": "Web Search",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    yield json.dumps(step) + "\n" 
+                    reasoning_steps.append(step)
+                    finalSources.append(urls)
+                elif chunk["type"] == "report":
+                    app = chunk["content"]
+                    print(app)
+                elif chunk["type"] == "html_app":
+                    app = chunk["content"]
+                    print(app)
+                elif chunk["type"] == "tables":
+                    tables = chunk["content"]
+                    print(tables)
+                elif chunk["type"] == "research_summary":
+                    summary = chunk["content"]
+                    step = {"type":"content","text":summary}
+                    yield json.dumps(step) + "\n"
+                    full_response = summary
                     
-                step = {
-                    "type": "reasoning",
-                    "step": "Sources Found",
-                    "content": query,
-                    "found_sources": len(urls),
-                    "sources": urls,
-                    "query": query,
-                    "category": "Web Search",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                yield json.dumps(step) + "\n" 
-                reasoning_steps.append(step)
-                finalSources.append(urls)
+        elif is_lab_mode:
+            print("lab")
+        else:
+            from simple_search_claude_streaming_with_web_search import ClaudeConversation
+            claudeClient = ClaudeConversation(messages=messages_list)
             
-            
-            # yield chunk
-        
-    
+            async for chunk in claudeClient.send_message(user_prompt,files=uploaded_files):
+                if chunk["type"] == "thinking":
+                    print(f"\n🧠 [THINKING]\n{chunk['text']}", end="", flush=True)
+                elif chunk["type"] == "content":
+                    print(chunk["text"], end="", flush=True)
+                    full_response += chunk["text"]
+                    yield json.dumps(chunk) + "\n"
+                elif chunk["type"] == "search_query":
+                    query = chunk['text']
+                    data = await claudeClient.google_search(query)
+                    urls = [item["url"] for item in data]
+
+                    step = {
+                        "type": "reasoning",
+                        "step": "Query analyzed",
+                        "content": query,
+                        "found_sources": len(urls),
+                        "sources": urls,
+                        "query": query,
+                        "category": "Web Search",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    yield json.dumps(step) + "\n"
+                     
+                    reasoning_steps.append(step)
+                    finalSources.append(urls) 
+             
+                elif chunk["type"] == "sources":
+                    query = chunk["content"]
+                    data = await claudeClient.google_search(query)
+                    urls = [item["url"] for item in data]
+                    
+                    step = {
+                        "type": "reasoning",
+                        "step": "Sources Found",
+                        "content": query,
+                        "found_sources": len(urls),
+                        "sources": urls,
+                        "query": query,
+                        "category": "Web Search",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    yield json.dumps(step) + "\n" 
+                    reasoning_steps.append(step)
+                    finalSources.append(urls) 
+             
         user_msg = Message(
             conversation_id=uuid.UUID(conversation_id),
             role="user",
@@ -1315,7 +1402,7 @@ async def stream_response_direct(
             reasoning_steps=json.dumps(reasoning_steps) if reasoning_steps else None,
             assets=json.dumps(extracted_assets) if extracted_assets else None,
             lab_mode=is_lab_mode,
-            app=None,
+            app=app,
             celery_task_id=None  # ✅ NULL for direct responses
         )
         db.add(assistant_msg)
@@ -3856,4 +3943,4 @@ async def root():
 #     uvicorn.run(app, host="0.0.0.0", port=8082, ssl_keyfile="server.key",ssl_certfile="server.crt", log_level="info")
 
 import uvicorn
-# uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
+uvicorn.run(app, host="127.0.0.1", port=8082, log_level="info")
