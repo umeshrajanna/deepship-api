@@ -1209,7 +1209,9 @@ async def stream_response_direct(
             Message.conversation_id == uuid.UUID(conversation_id)
         ).order_by(Message.created_at).all()
         
-        messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages]
+        messages_list = [{"role": msg.role, "content": msg.content} for msg in db_messages if msg.content != None and len(msg.content) > 0]
+
+        apps = [{"app":msg.app} for msg in db_messages if msg.app != None and len(msg.app) > 0]
         
         reasoning_steps = []
         
@@ -1264,16 +1266,81 @@ async def stream_response_direct(
             from simple_search_claude_streaming_with_web_search import ClaudeConversation
             claudeClient = ClaudeConversation(messages=messages_list)
             
+            assistant_msgs =  [m for m in messages_list if m["role"] == "assistant"]
+            
+            app_prev = None
+            if apps and len(apps) > 0:
+                app_prev = apps[-1]["app"]
+                # messages_list.append({"role":"assistant","content":app_prev})
+            
             deep_research = None
             
-            if is_deep_search:
-                from deep_search_with_claude import DeepResearch
-                deep_research = DeepResearch(claudeClient)
-            elif is_lab_mode:
-                from lab_with_claude import DeepResearch
-                deep_research = DeepResearch(claudeClient)
-            
-            async for chunk in deep_research.research(user_prompt,files=uploaded_files):
+        if is_deep_search:
+                from deep_search_with_claude import MarkdownResearch
+                deep_research = MarkdownResearch(claudeClient)
+              
+                async for chunk in deep_research.research(user_prompt,files=uploaded_files,existing_markdown=app_prev):
+                    if chunk["type"] == "thinking":
+                        print(f"\n🧠 [THINKING]\n{chunk['text']}", end="", flush=True)
+                    elif chunk["type"] == "content":
+                        print(chunk["text"], end="", flush=True)
+                        full_response += chunk["text"]
+                        yield json.dumps(chunk) + "\n"
+                    elif chunk["type"] == "reasoning":
+                        step = {
+                            "type": "reasoning",
+                            "step": "Reasoning...",
+                            "content": chunk["text"],
+                            "found_sources": None,
+                            "sources": None,
+                            "query": chunk["text"],
+                            "category": "Reasoning",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        yield json.dumps(step) + "\n" 
+                        reasoning_steps.append(step)
+                    elif chunk["type"] == "search_query":
+                        query = chunk['text']
+                        data = await claudeClient.google_search(query)
+
+                        urls = [item["url"] for item in data]
+                            
+                        step = {
+                            "type": "reasoning",
+                            "step": "Sources Found",
+                            "content": query,
+                            "found_sources": len(urls),
+                            "sources": urls,
+                            "query": query,
+                            "category": "Web Search",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        yield json.dumps(step) + "\n" 
+                        reasoning_steps.append(step)
+                        finalSources.append(urls)
+                    elif chunk["type"] == "markdown_report":
+                        app = chunk["content"]
+                        print(app)
+                    elif chunk["type"] == "html_app":
+                        app = chunk["content"]
+                        with open("app.htm", "w", encoding="utf-8") as f:
+                            f.write(app)
+                        print(app)
+                    elif chunk["type"] == "tables":
+                        tables = chunk["content"]
+                        print(tables)
+                    elif chunk["type"] == "research_summary":
+                        summary = chunk["content"]
+                        step = {"type":"content","text":summary}
+                        full_response += summary
+                        yield json.dumps(step) + "\n"
+                        full_response = summary
+                    
+        elif is_lab_mode:
+            from lab_with_claude import DeepResearch
+            deep_research = DeepResearch(claudeClient)
+
+            async for chunk in deep_research.research(user_prompt,files=uploaded_files,existing_html=app_prev):
                 if chunk["type"] == "thinking":
                     print(f"\n🧠 [THINKING]\n{chunk['text']}", end="", flush=True)
                 elif chunk["type"] == "content":
@@ -1317,6 +1384,8 @@ async def stream_response_direct(
                     print(app)
                 elif chunk["type"] == "html_app":
                     app = chunk["content"]
+                    with open("app.htm", "w", encoding="utf-8") as f:
+                        f.write(app)
                     print(app)
                 elif chunk["type"] == "tables":
                     tables = chunk["content"]
@@ -1324,10 +1393,10 @@ async def stream_response_direct(
                 elif chunk["type"] == "research_summary":
                     summary = chunk["content"]
                     step = {"type":"content","text":summary}
+                    full_response += summary
                     yield json.dumps(step) + "\n"
                     full_response = summary
-                    
-        elif is_lab_mode:
+        
             print("lab")
         else:
             from simple_search_claude_streaming_with_web_search import ClaudeConversation
@@ -1379,7 +1448,15 @@ async def stream_response_direct(
                     yield json.dumps(step) + "\n" 
                     reasoning_steps.append(step)
                     finalSources.append(urls) 
-             
+        
+        mode = "normal"
+        if is_lab_mode == True:
+            mode = "lab" 
+        elif  is_deep_search == True:
+            mode = "deep_search"
+        else: 
+            mode = "normal"
+        
         user_msg = Message(
             conversation_id=uuid.UUID(conversation_id),
             role="user",
@@ -1388,6 +1465,7 @@ async def stream_response_direct(
             reasoning_steps=None,
             assets=None,
             lab_mode=True,
+            mode = mode,
             has_file=len(file_contents) > 0,
             file_type=", ".join([f["type"] for f in file_contents]) if file_contents else None
         )
@@ -2089,7 +2167,7 @@ async def list_conversations(
             updated_at=conv.updated_at,
             message_count=conv.message_count or 0
         )
-        for conv in conversations
+        for conv in conversations if conv.message_count > 0
     ]
 
 @app.get("/conversations/{conversation_id}/messages")
@@ -2121,7 +2199,8 @@ async def get_messages(
         "assets": json.loads(m.assets) if m.assets else None,  # NEW,
         "app":  m.app,
         "lab_mode": m.lab_mode,  # NEW
-        "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions]
+        "reactions": [{"type": r.reaction_type, "user_id": str(r.user_id)} for r in m.reactions],
+        "mode":m.mode
     } for m in messages]
       
     # result = []

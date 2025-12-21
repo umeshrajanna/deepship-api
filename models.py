@@ -157,6 +157,7 @@ class Message(Base):
     assets = Column(Text, nullable=True)  # JSON string
     app = Column(Text, nullable=True)  # HTML/code content
     
+    mode = Column(Text, default="normal")
     # Status tracking
     lab_mode = Column(Boolean, default=False)
     celery_task_id = Column(String, nullable=True, index=True)

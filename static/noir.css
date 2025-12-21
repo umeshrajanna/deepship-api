@@ -3680,6 +3680,8 @@ body {
     border-top: 1px solid #E8E6DC;
     flex-shrink: 0;
     background: #EDECDD;
+    display: flex;
+    justify-content: center;
 }
 
 .news-panel-close-btn {
@@ -3689,10 +3691,10 @@ body {
     border: 1px solid #E8A87C;
     color: #D4A574;
     font-family: 'Roboto Mono', monospace;
-    font-size: 10px;
+    /* font-size: 10px; */
     font-weight: 600;
     letter-spacing: 1px;
-    text-transform: uppercase;
+    /* text-transform: uppercase; */
     cursor: pointer;
     border-radius: 6px;
     transition: all 0.3s ease;
@@ -8063,7 +8065,6 @@ conversations-panel-content::-webkit-scrollbar-thumb:hover {
 
 .premium-popup-close-btn:hover {
     color: #fff;
-    transform: rotate(90deg);
 }
 
 /* Popup Content */
@@ -10300,7 +10301,6 @@ body.logged-in .use-cases-icon-btn {
 .split-close:hover {
     background: rgba(255, 68, 68, 0.2);
     border-color: rgba(255, 68, 68, 0.4);
-    transform: translateY(-3px);
 }
 
 .main-panel-close-btn {
@@ -10692,7 +10692,7 @@ body.logged-in .use-cases-icon-btn {
     border: none !important;
 }
 
-@media (min-width: 1200px) {
+/* @media (min-width: 1200px) {
     .chat-area {
     display: flex;
     flex-direction: column;
@@ -10723,12 +10723,11 @@ body.logged-in .use-cases-icon-btn {
     .messages {
         height: 100% !important;
         width: 40% !important;
-        min-width: 480px !important;
-        max-width: 560px !important;
+        min-width: 600px !important;
+        max-width: 700px !important;
 
     }
     
-    /* Constrain the message containers */
     .messages .message {
         width: 100% !important;
         max-width: 100% !important;
@@ -10746,27 +10745,19 @@ body.logged-in .use-cases-icon-btn {
         min-width: 480px !important;
         max-width: 560px !important;
         box-sizing: border-box !important;
-        /* Remove if you want tabs hidden: display: none !important; */
     }
     
-    /* Innermost element */
     .response-content {
         height: 100% !important;
         width: 100% !important;
-        min-width: 480px !important;
-        max-width: 560px !important;
+        min-width: 600px !important;
+        max-width: 700px !important;
         overflow-x: hidden !important;
         box-sizing: border-box !important;
         border: 1px solid green !important;
     }
     
-    /* Constrain all children */
-    /* .response-content * {
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        word-wrap: break-word !important;
-    } */
-}
+} */
  
 .conversations-panel-backdrop {
     z-index: 9998 !important;
@@ -10775,4 +10766,815 @@ body.logged-in .use-cases-icon-btn {
 
 .conversations-selection-panel {
     z-index: 9999 !important;
+}
+
+
+
+
+
+
+
+
+
+/* ===========================================
+   SPLIT-RIGHT FIX
+   Uses body.split-screen-active instead of 
+   container.split-active
+   =========================================== */
+
+/* Force show split-right when body has split-screen-active */
+body.split-screen-active .split-right,
+body.split-screen-active .split-screen-container > .split-right,
+body.split-screen-active #split-screen-container > .split-right {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex-direction: column !important;
+    background: #1a1a1a !important;
+    overflow: hidden !important;
+}
+
+/* Hide when body does NOT have split-screen-active */
+body:not(.split-screen-active) .split-right,
+body:not(.split-screen-active) .split-screen-container > .split-right,
+body:not(.split-screen-active) #split-screen-container > .split-right {
+    display: none !important;
+}
+
+/* ===========================================
+   MOBILE/TABLET (<1200px): Fullscreen right
+   =========================================== */
+@media screen and (max-width: 1199px) {
+    body.split-screen-active .split-screen-container,
+    body.split-screen-active #split-screen-container {
+        flex-direction: column !important;
+    }
+    
+    /* Hide left panel */
+    body.split-screen-active .split-left,
+    body.split-screen-active #split-left-div {
+        display: none !important;
+    }
+    
+    /* Fullscreen right panel */
+    body.split-screen-active .split-right {
+        width: 100% !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        flex: 1 1 100% !important;
+        border-left: none !important;
+    }
+}
+
+/* ===========================================
+   DESKTOP (>=1200px): 40/60 split
+   =========================================== */
+@media screen and (min-width: 1200px) {
+    body.split-screen-active .split-screen-container,
+    body.split-screen-active #split-screen-container {
+        flex-direction: row !important;
+    }
+    
+    /* Show left panel at 40% */
+    body.split-screen-active .split-left,
+    body.split-screen-active #split-left-div {
+        display: flex !important;
+        width: 40% !important;
+        flex: 0 0 40% !important;
+        min-width: 400px !important;
+        align-items: center !important;
+    }
+    
+    /* Right panel at 60% */
+    body.split-screen-active .split-right {
+        width: 60% !important;
+        height: 100% !important;
+        flex: 0 0 60% !important;
+        min-width: 500px !important;
+        border-left: 1px solid #333 !important;
+    }
+    
+    /* Messages centered in left panel */
+    body.split-screen-active .split-left .messages,
+    body.split-screen-active .split-left .input-container,
+    body.split-screen-active #split-left-div .messages,
+    body.split-screen-active #split-left-div .input-container {
+        max-width: 90% !important;
+        min-width: auto !important;
+    }
+}
+
+/* ===========================================
+   NON-SPLIT STATE: Messages centered
+   =========================================== */
+@media screen and (min-width: 768px) {
+    body:not(.split-screen-active) .split-left,
+    body:not(.split-screen-active) #split-left-div {
+        display: flex !important;
+        width: 100% !important;
+        align-items: center !important;
+    }
+    
+    body:not(.split-screen-active) .messages,
+    body:not(.split-screen-active) .input-container {
+        max-width: 60% !important;
+        min-width: 450px !important;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    body:not(.split-screen-active) .messages,
+    body:not(.split-screen-active) .input-container {
+        max-width: 100% !important;
+        min-width: auto !important;
+    }
+}
+
+/* ===========================================
+   SPLIT-RIGHT INTERNALS
+   =========================================== */
+body.split-screen-active .split-right .split-tabs {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 12px !important;
+    background: #252525 !important;
+    border-bottom: 1px solid #333 !important;
+    flex-shrink: 0 !important;
+}
+
+body.split-screen-active .split-right .split-content-area {
+    flex: 1 !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+body.split-screen-active .split-right .split-tab-content {
+    display: none !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+body.split-screen-active .split-right .split-tab-content.active {
+    display: block !important;
+}
+
+body.split-screen-active .split-right .split-preview-iframe,
+body.split-screen-active .split-right #split-preview-iframe {
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    background: #fff !important;
+}
+
+/* ===========================================
+   NON-SPLIT STATE: Messages centered with consistent padding
+   =========================================== */
+
+/* Mobile: 300px - 767px */
+@media screen and (max-width: 767px) {
+    body:not(.split-screen-active) .split-left,
+    body:not(.split-screen-active) #split-left-div {
+        display: flex !important;
+        width: 100% !important;
+        align-items: center !important;
+    }
+    
+    body:not(.split-screen-active) .messages,
+    body:not(.split-screen-active) .input-container {
+        max-width: 100% !important;
+        min-width: auto !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* Tablet+: 768px and above */
+@media screen and (min-width: 768px) {
+    body:not(.split-screen-active) .split-left,
+    body:not(.split-screen-active) #split-left-div {
+        display: flex !important;
+        width: 100% !important;
+        align-items: center !important;
+    }
+    
+    body:not(.split-screen-active) .messages,
+    body:not(.split-screen-active) .input-container {
+        max-width: 60% !important;
+        min-width: 450px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* Large desktop: 1600px+ */
+@media screen and (min-width: 1600px) {
+    body:not(.split-screen-active) .messages,
+    body:not(.split-screen-active) .input-container {
+        max-width: 55% !important;
+        min-width: 600px !important;
+    }
+}
+
+/* ===========================================
+   NON-SPLIT STATE: Fixed width matching 767px look
+   =========================================== */
+body:not(.split-screen-active) .split-left,
+body:not(.split-screen-active) #split-left-div {
+    display: flex !important;
+    width: 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body:not(.split-screen-active) .messages,
+body:not(.split-screen-active) .input-container {
+    max-width: 735px !important;
+    width: 100% !important;
+    min-width: auto !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box !important;
+}
+
+/* ===========================================
+   SPLIT-TABS COLOR FIX
+   =========================================== */
+body.split-screen-active .split-right .split-tabs {
+    background: #F6F5EF !important;
+    border-bottom: 1px solid #ddd !important;
+}
+
+body.split-screen-active .split-right .split-tabs button {
+    background: transparent !important;
+    color: #333 !important;
+    border: 1px solid #ccc !important;
+}
+
+body.split-screen-active .split-right .split-tabs button:hover {
+    background: #174236 !important;
+    color: #fff !important;
+    border-color: #174236 !important;
+}
+
+body.split-screen-active .split-right .split-tabs button.active {
+    background: #174236 !important;
+    color: #fff !important;
+    border-color: #174236 !important;
+}
+
+body.split-screen-active .split-right #split-app-select {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    color: #333 !important;
+}
+
+body.split-screen-active .split-right #split-app-select:hover,
+body.split-screen-active .split-right #split-app-select:focus {
+    border-color: #174236 !important;
+}
+
+/* ===========================================
+   SPLIT MODE: Fix messages positioning
+   =========================================== */
+body.split-screen-active .split-left,
+body.split-screen-active #split-left-div {
+    position: relative !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+body.split-screen-active .split-left .messages,
+body.split-screen-active #split-left-div .messages {
+    position: relative !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    transform: none !important;
+}
+
+body.split-screen-active .split-left .input-area,
+body.split-screen-active #split-left-div .input-area,
+body.split-screen-active .split-left .input-container,
+body.split-screen-active #split-left-div .input-container {
+    position: relative !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    margin-top: 0 !important;
+    transform: none !important;
+}
+
+/* Ensure proper flex layout in split-left */
+body.split-screen-active .split-left,
+body.split-screen-active #split-left-div {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
+body.split-screen-active .split-left .messages,
+body.split-screen-active #split-left-div .messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+}
+
+body.split-screen-active .split-left .input-area,
+body.split-screen-active #split-left-div .input-area {
+    flex-shrink: 0 !important;
+}
+
+/* ===========================================
+   SPLIT MODE: Fix scrollbar alignment
+   =========================================== */
+body.split-screen-active .split-left,
+body.split-screen-active #split-left-div {
+    padding-top: 60px !important;
+}
+
+body.split-screen-active .split-left .messages,
+body.split-screen-active #split-left-div .messages {
+    padding-top: 0 !important;
+}
+
+/* ===========================================
+   CLOSE BUTTONS STYLING - UNIFORM
+   =========================================== */
+button[id*="close"],
+button[id*="Close"],
+[id*="close-btn"],
+#closeSplitScreen,
+.split-close {
+    background: #f8a5a5 !important;
+    color: #5c1e1e !important;
+    border: none !important;
+    border-radius: 6px !important;
+    width: 60px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 36px !important;
+    text-align: center !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+button[id*="close"]:hover,
+button[id*="Close"]:hover,
+[id*="close-btn"]:hover,
+#closeSplitScreen:hover,
+.split-close:hover {
+    background: #f48fb1 !important;
+    box-shadow: 0 0 12px rgba(244, 143, 177, 0.5) !important;
+}
+
+/* Hide any SVG icons inside (since we're using text now) */
+button[id*="close"] svg,
+button[id*="Close"] svg,
+[id*="close-btn"] svg,
+#closeSplitScreen svg,
+.split-close svg {
+    display: none !important;
+}
+
+/* Hide empty close buttons */
+button[id*="close"]:empty,
+[id*="close-btn"]:empty {
+    display: none !important;
+}
+
+/* ===========================================
+   SPLIT-RIGHT & IFRAME BACKGROUND FIX
+   =========================================== */
+body.split-screen-active .split-right {
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    background: #F6F5EF !important;
+}
+
+body.split-screen-active .split-right .split-tabs {
+    margin: -16px -16px 16px -16px !important;
+    padding: 8px 16px !important;
+    background: #F6F5EF !important;
+}
+
+body.split-screen-active .split-right .split-content-area {
+    background: #F6F5EF !important;
+}
+
+body.split-screen-active .split-right .split-tab-content {
+    background: #F6F5EF !important;
+}
+
+body.split-screen-active .split-right .split-preview-iframe,
+body.split-screen-active .split-right #split-preview-iframe {
+    background: #F6F5EF !important;
+    border-radius: 8px !important;
+}
+
+/* ===========================================
+   SPLIT-RIGHT BACKGROUND - ABSOLUTE OVERRIDE
+   =========================================== */
+div.split-right,
+.split-right,
+#split-screen-container > .split-right,
+#split-screen-container div.split-right,
+.split-screen-container > .split-right,
+.split-screen-container div.split-right,
+body.split-screen-active .split-right,
+body.split-screen-active #split-screen-container > .split-right,
+html body.split-screen-active .split-right,
+html body.split-screen-active div.split-right {
+    background: #F6F5EF !important;
+    background-color: #F6F5EF !important;
+}
+
+ /* ===========================================
+   INPUT MODE ICONS - SMALLER & PROFESSIONAL
+   =========================================== */
+.input-mode-icons .mode-icon-btn svg,
+#file-upload-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    stroke: #666 !important;
+    stroke-width: 2 !important;
+}
+
+.send-icon-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    stroke: #174236 !important;
+    stroke-width: 2 !important;
+}
+
+.input-mode-icons .mode-icon-btn:hover svg,
+#file-upload-btn:hover svg {
+    stroke: #174236 !important;
+}
+
+.input-mode-icons .mode-icon-btn.active svg {
+    stroke: #174236 !important;
+}
+
+.send-icon-btn:hover svg {
+    stroke: #0d2a22 !important;
+}
+
+/* Smaller button padding */
+.mode-icon-btn {
+    padding: 6px !important;
+}
+
+.send-icon-btn {
+    padding: 8px !important;
+}
+
+/* ===========================================
+   MODE LABEL - MINIMAL
+   =========================================== */
+.input-wrapper[data-mode-label]::before {
+    font-size: 8px !important;
+    letter-spacing: 1px !important;
+    padding: 2px 5px !important;
+    font-weight: 600 !important;
+    opacity: 0.8 !important;
+    text-transform: uppercase !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ===========================================
+   PRISM - CLAUDE THEME COLORS
+   =========================================== */
+
+/* Background */
+#split-html-code,
+#split-html-code[class*="language-"],
+code[class*="language-"],
+pre[class*="language-"] {
+    background: #f5f5f5  !important;
+    background-color: #f5f5f5  !important;
+    
+}
+ 
+#split-html-code .token {
+    background: none !important;
+}
+
+/* Font size */
+#split-html-code,
+#split-html-code[class*="language-"] {
+    font-size: 17px !important;
+    line-height: 1.3 !important;
+    font-weight: 520 !important;
+}
+
+#split-html-code {
+    padding: 12px 16px !important;
+    margin: 0 !important;
+    display: block !important;
+}
+/* Base text - warm dark */
+#split-html-code.language-markup {
+    color: #2c2c2c !important;
+}
+
+/* HTML tags - Claude rust orange */
+#split-html-code .token.tag {
+    color: #C15F3C !important;
+}
+
+/* Tag names - darker rust */
+#split-html-code .token.tag .tag {
+    color: #A14A2F !important;
+    font-weight: 600 !important;
+}
+
+/* Attributes - warm purple */
+#split-html-code .token.attr-name {
+    color: #8B5CF6 !important;
+}
+
+/* Attribute values / strings - warm blue */
+#split-html-code .token.attr-value,
+#split-html-code .token.string {
+    color: #2563EB !important;
+}
+
+/* Punctuation - warm gray */
+#split-html-code .token.punctuation {
+    color: #4B5563 !important;
+}
+
+/* Comments - muted */
+#split-html-code .token.comment {
+    color: #6B7280 !important;
+    font-style: italic !important;
+}
+
+/* CSS property names - rust orange */
+#split-html-code .token.property {
+    color: #C15F3C !important;
+}
+
+/* CSS selectors - warm purple */
+#split-html-code .token.selector {
+    color: #7C3AED !important;
+    font-weight: 600 !important;
+}
+
+/* Numbers - warm orange */
+#split-html-code .token.number {
+    color: #D97706 !important;
+}
+
+/* Keywords - warm red */
+#split-html-code .token.keyword,
+#split-html-code .token.important {
+    color: #DC2626 !important;
+    font-weight: 600 !important;
+}
+
+/* Functions - purple */
+#split-html-code .token.function {
+    color: #7C3AED !important;
+}
+
+/* Doctype / meta - muted */
+#split-html-code .token.doctype,
+#split-html-code .token.prolog {
+    color: #6B7280 !important;
+}
+
+/* ===========================================
+   COPY HTML BUTTON
+   =========================================== */
+.split-copy-btn {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    background: #174236 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
+    color: #333 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    color: white !important;
+}
+
+.split-copy-btn:hover {
+    background: #174236 !important;
+    color: #fff !important;
+    border-color: #174236 !important;
+}
+
+.split-copy-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+@media (max-width: 700px) {
+    .split-right .split-tabs {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 10px 12px !important;
+        gap: 10px !important;
+        border-bottom: 1px solid #ddd !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+    
+    .split-right .split-tabs .split-close {
+        order: -1 !important;
+    }
+    
+    .split-right .split-tabs > div:nth-child(2) {
+        display: none !important;
+    }
+    
+    .split-right .split-tabs > div:last-child {
+        margin-left: auto !important;
+    }
+}
+
+
+
+
+/* ===========================================
+   INPUT - FIX OVERFLOW IN SPLIT MODE
+   =========================================== */
+/* ===========================================
+   INPUT - FIX OVERFLOW IN SPLIT MODE
+   =========================================== */
+@media screen and (min-width: 1200px) {
+    body.split-screen-active .split-left .input-area,
+    body.split-screen-active #split-left-div .input-area {
+        max-width: 90% !important;
+        width: 90% !important;
+        margin: 0 auto 10px !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    body.split-screen-active .split-left .input-container,
+    body.split-screen-active #split-left-div .input-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    body.split-screen-active .split-left #split-input-placeholder,
+    body.split-screen-active #split-left-div #split-input-placeholder {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    body.split-screen-active .split-left .input-wrapper,
+    body.split-screen-active #split-left-div .input-wrapper {
+        max-width: 100% !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+    }
+    
+    body.split-screen-active .split-left #message-input,
+    body.split-screen-active #split-left-div #message-input {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    body.split-screen-active .split-left .input-controls-column,
+    body.split-screen-active #split-left-div .input-controls-column {
+        flex: 0 0 auto !important;
+    }
+}
+
+/* ===========================================
+   GLOBAL SCROLLBAR STYLING
+   =========================================== */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555 !important;
+    border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin !important;
+    scrollbar-color: #555 transparent !important;
+}
+
+
+/* Override the 200px margin */
+body.split-screen-active .messages,
+body.split-screen-active #split-messages,
+body.split-screen-active #messages {
+    margin-bottom: 20px !important;
+    padding-bottom: 20px !important;
+}
+
+
+/* Remove cursor blinking from all controls in input-wrapper except message-input */
+.input-wrapper *:not(#message-input) {
+    caret-color: transparent !important;
+}
+
+.input-wrapper button,
+.input-wrapper .mode-icon-btn,
+.input-wrapper .send-icon-btn,
+.input-wrapper input[type="file"] {
+    caret-color: transparent !important;
+    cursor: pointer !important;
+}
+
+/* Keep cursor visible only in message-input */
+#message-input {
+    caret-color: auto !important;
+}
+
+.mode-icon-btn.mode-locked {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+}
+
+
+/* In-progress reasoning step */
+.reasoning-step.in-progress {
+    opacity: 0.7;
+}
+
+.reasoning-step.in-progress .streaming-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0;
+}
+
+.reasoning-step.in-progress .streaming-dot {
+    width: 6px;
+    height: 6px;
+    background: #d4a574;
+    border-radius: 50%;
+    animation: pulse 1.4s infinite ease-in-out;
+}
+
+.reasoning-step.in-progress .streaming-dot:nth-child(1) { animation-delay: 0s; }
+.reasoning-step.in-progress .streaming-dot:nth-child(2) { animation-delay: 0.2s; }
+.reasoning-step.in-progress .streaming-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+    0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+    40% { transform: scale(1.2); opacity: 1; }
 }

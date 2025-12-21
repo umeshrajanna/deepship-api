@@ -22,52 +22,132 @@ async def get_browser_pool():
     return _global_browser_pool
 
 
-async def classify_message(conversation_messages: List[Dict], user_message: str, client, model: str) -> str:
+async def classify_web_search_needed(query: str, client, model: str) -> dict:
     """
-    Router: Classify message routing
-    Returns: "deep_research" | "web_search" | "conversation"
+    Classifier for first message: What should we do?
+    Returns: {"action": "conversation|create_app", "use_web_search": bool}
     """
     
-    # ✅ DATE FIX
+    current_date = datetime.now().strftime("%A, %B %d, %Y")
+    
+    prompt = f"""The current date is {current_date}.
+
+User's first message: "{query}"
+
+Determine what action to take:
+
+1. If this is a CASUAL/GREETING message (hi, hello, how are you, etc.):
+   - action: "conversation"
+   - use_web_search: false
+
+2. If this is a RESEARCH/APP REQUEST:
+   - action: "create_app"
+   - use_web_search: true/false (based on if it needs current data)
+
+Return ONLY valid JSON:
+{{"action": "conversation|create_app", "use_web_search": true|false}}"""
+
+    try:
+        response = await client.messages.create(
+            model=model,
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        response_text = response.content[0].text.strip()
+        
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+        
+        result = json.loads(response_text)
+        
+        print(f"🔍 First message action: {result.get('action')}, Web search: {result.get('use_web_search', False)}")
+        return result
+    
+    except Exception as e:
+        print(f"⚠️ Classifier error: {e}, defaulting to conversation")
+        return {"action": "conversation", "use_web_search": False}
+    
+async def classify_followup_message(
+    conversation_messages: List[Dict], 
+    user_message: str, 
+    client, 
+    model: str,
+    has_existing_html: bool
+) -> Dict[str, any]:
+    """
+    Full classifier for follow-up messages
+    Returns: {"route": "conversation|create_app|update_app", "use_web_search": bool}
+    """
+    
     current_date = datetime.now().strftime("%A, %B %d, %Y")
     
     # Format conversation history
     history_text = ""
-    for msg in conversation_messages[-6:]:  # Last 6 messages for context
+    for msg in conversation_messages[-6:]:
         role = msg.get("role", "")
         content = msg.get("content", "")
         if isinstance(content, list):
             content = " ".join([c.get("text", "") for c in content if c.get("type") == "text"])
         history_text += f"{role}: {content[:500]}...\n\n"
     
+    existing_html_context = ""
+    if has_existing_html:
+        existing_html_context = "\n\nNOTE: There is an existing HTML app that can be updated."
+    
     router_prompt = f"""The current date is {current_date}.
 
-You are a routing classifier. Analyze this conversation and determine what action to take for the latest user message.
+Analyze the conversation and classify the user's message.
 
 Recent conversation history:
-{history_text}
+{history_text}{existing_html_context}
 
 Latest user message: "{user_message}"
 
-Classify as:
+Classify the message:
 
-1. "deep_research" - User wants comprehensive NEW research on a different topic requiring multiple queries, branches, and deep analysis
-   - Indicators: New broad topic, "research X", "analyze comprehensively", completely different subject
+1. ROUTE (choose one):
+
+   a) "conversation" - Just answering questions, NO app creation/update
+      - Asking about existing content
+      - Clarifying questions
+      - Discussion
    
-2. "web_search" - User wants to ADD information, modify existing research, or change styling
-   - Indicators: "Add data about...", "Include information on...", "Make it dark mode", "Change the design", "Add charts", "Update with...", extensions of current topic
+   b) "create_app" - Create NEW app (topic is significantly DIFFERENT from current conversation)
+      - New topic unrelated to current conversation
+      - User wants to research something completely different
+      - Examples: Currently discussing "Apple" → User asks "Research climate change"
    
-3. "conversation" - User is asking CLARIFYING questions about existing research, NO new data or changes needed
-   - Indicators: "What does that mean?", "Can you explain?", "What's the source?", "Tell me more about what you found", asking about existing findings
+   c) "update_app" - Update EXISTING app (topic is RELATED to current conversation)
+      - Extending/modifying current topic
+      - Adding data to existing research
+      - Styling changes
+      - Examples: Currently discussing "Apple vs Microsoft" → User asks "Add revenue data"
+      - ONLY if existing HTML app is present
+
+2. USE_WEB_SEARCH (true/false):
+   
+   true = Need current/factual data from web
+   - Current statistics, prices, news
+   - Comparative analysis with real numbers
+   - Time-sensitive info ("2025", "latest", "current")
+   
+   false = LLM knowledge sufficient
+   - General knowledge topics
+   - Creative/educational content
+   - Conceptual explanations
+   - Styling changes ("make it dark mode")
 
 CRITICAL RULES:
-- If user wants to ADD data, modify styling, or extend the research → "web_search" (will regenerate HTML)
-- If user is asking to understand/clarify existing content → "conversation" (no HTML regeneration)
-- If user wants completely NEW research on different topic → "deep_research"
-- Styling changes like "make it prettier", "dark mode", "add animations" → "web_search"
+- If no existing HTML app → cannot choose "update_app"
+- "conversation" never needs web search (always false)
+- New unrelated topic → "create_app"
+- Related/extending topic + existing HTML → "update_app"
 
 Return ONLY valid JSON:
-{{"route": "deep_research|web_search|conversation", "reasoning": "..."}}"""
+{{"route": "conversation|create_app|update_app", "use_web_search": true|false, "reasoning": "..."}}"""
 
     try:
         response = await client.messages.create(
@@ -78,7 +158,6 @@ Return ONLY valid JSON:
         
         response_text = response.content[0].text.strip()
         
-        # Parse JSON
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
@@ -86,19 +165,28 @@ Return ONLY valid JSON:
         
         result = json.loads(response_text)
         route = result.get("route", "conversation")
+        use_web_search = result.get("use_web_search", False)
         
-        print(f"🔀 Router decision: {route} - {result.get('reasoning', '')}")
-        return route
+        # Fallback: if update_app but no existing HTML, change to create_app
+        if route == "update_app" and not has_existing_html:
+            print(f"⚠️ Router chose 'update_app' but no existing HTML, changing to 'create_app'")
+            route = "create_app"
+        
+        # Conversation never uses web search
+        if route == "conversation":
+            use_web_search = False
+        
+        print(f"🔀 Router: {route}, Web search: {use_web_search} - {result.get('reasoning', '')}")
+        return {"route": route, "use_web_search": use_web_search}
     
     except Exception as e:
-        print(f"⚠️ Router error: {e}, defaulting to 'conversation'")
-        return "conversation"
+        print(f"⚠️ Classifier error: {e}, defaulting to conversation")
+        return {"route": "conversation", "use_web_search": False}
 
 
 class DeepResearch:
     """
-    Tree-based research: Input → Level 1 (1-2 queries) → Level 2 (1-2 queries each)
-    Always generates interactive HTML website (except for clarifying questions)
+    Intelligent research system with multi-stage deep research and smart routing
     """
     
     def __init__(self, conversation):
@@ -109,169 +197,162 @@ class DeepResearch:
         self.conversation = conversation
         self.client = conversation.client
         self.model = conversation.model
+        self.model = "claude-opus-4-20250514"
+        self.html_model = "claude-opus-4-20250514"
         self.browser_pool = None
-        self.query_tables = {}  # Store tables per query
-        self.query_results = []  # Store all query results
-        self.last_research_data = None  # Store last research data for modifications
+        self.query_tables = {}
+        self.last_research_data = None
     
-    async def research(self, query: str, files: Optional[List[UploadFile]] = None):
+    async def research(
+    self, 
+    query: str, 
+    files: Optional[List[UploadFile]] = None,
+    existing_html: Optional[str] = None
+):
         """
-        Main entry point with automatic routing logic
-        Generates interactive HTML website for all routes except clarifications
+        Main entry point with intelligent routing
         
         Args:
-            query: User's research question
+            query: User's message/question
             files: Optional uploaded files
+            existing_html: Optional existing HTML app to update
         
         Yields: {"type": "search_query"/"sources"/"tables"/"reasoning"/"content"/"html_app"/"research_summary"}
         """
         
-        # ✅ Automatically detect if this is a follow-up
+        # ✅ Detect if this is a follow-up
         follow_up = len(self.conversation.messages) > 0
         
-        # ✅ ROUTING LOGIC
-        if follow_up:
-            # Call router to decide: deep_research | web_search | conversation
-            route = await classify_message(
+        if not follow_up:
+            # ✅ FIRST MESSAGE - Classify action
+            yield {"type": "reasoning", "text": "🔍 Analyzing your request..."}
+            
+            decision = await self._classify_first_message(query)
+            
+            if decision["action"] == "conversation":
+                # Just greeting/casual conversation
+                yield {"type": "reasoning", "text": "💬 Hello! How can I help you today?"}
+                async for chunk in self.conversation.send_message(query, files, simple_search=False):
+                    yield chunk
+            else:
+                # Create app
+                async for chunk in self._create_app_flow(query, files, decision["use_web_search"]):
+                    yield chunk
+        
+        else:
+            # ✅ FOLLOW-UP MESSAGE - Classify route + web search
+            decision = await classify_followup_message(
                 self.conversation.messages,
                 query,
                 self.client,
-                self.model
+                self.model,
+                has_existing_html=existing_html is not None
             )
             
+            route = decision["route"]
+            use_web_search = decision["use_web_search"]
+            
             if route == "conversation":
-                # Answer clarifying questions, NO HTML generation
+                # Just answer, no app
                 yield {"type": "reasoning", "text": "💬 Answering your question..."}
                 async for chunk in self.conversation.send_message(query, files, simple_search=False):
                     yield chunk
-                return  # Exit - no HTML app
             
-            elif route == "web_search":
-                # Extension/modification - search + regenerate HTML
-                yield {"type": "reasoning", "text": "🔍 Gathering additional information..."}
-                
-                # Check if web search is needed
-                search_info = await self.conversation._generate_search_query(query)
-                
-                tables = []
-                if search_info["search_needed"] and search_info["query"]:
-                    yield {"type": "search_query", "text": search_info["query"]}
-                    
-                    # Perform web search
-                    search_results = await self.conversation.google_search(search_info["query"])
-                    yield {"type": "sources", "content": search_results}
-                    
-                    # Extract tables
-                    browser_pool = await get_browser_pool()
-                    urls = [result["url"] for result in search_results[:5]]
-                    
-                    if urls:
-                        yield {"type": "reasoning", "text": "📊 Extracting tables from sources..."}
-                        
-                        scrape_results = await scrape_tables_parallel(
-                            urls,
-                            browser_pool=browser_pool,
-                            timeout=60000
-                        )
-                        
-                        # Format tables
-                        for url, url_tables in scrape_results.items():
-                            if url_tables:
-                                for table in url_tables:
-                                    tables.append({
-                                        'url': url,
-                                        'table': table
-                                    })
-                        
-                        if tables:
-                            yield {"type": "tables", "content": tables}
-                            yield {"type": "reasoning", "text": f"✅ Extracted {len(tables)} tables"}
-                
-                # Build research data for HTML generation
-                yield {"type": "reasoning", "text": "📦 Organizing research data..."}
-                
-                # Use previous research data if available, add new data
-                if self.last_research_data:
-                    research_data = self.last_research_data.copy()
-                    # Add new tables to existing structure
-                    if tables:
-                        if "additional_data" not in research_data:
-                            research_data["additional_data"] = []
-                        research_data["additional_data"].append({
-                            "query": query,
-                            "tables": tables
-                        })
-                else:
-                    # No previous research, create new structure
-                    research_data = {
-                        "query": query,
-                        "branches": [{
-                            "title": query,
-                            "sub_queries": [{
-                                "question": query,
-                                "tables": tables,
-                                "tables_count": len(tables)
-                            }]
-                        }]
-                    }
-                
-                # Generate new HTML app with updated/modified data
-                yield {"type": "reasoning", "text": "🎨 Generating updated HTML website..."}
-                html_app = await self._generate_html_app(research_data, modification_request=query)
-                
-                yield {"type": "html_app", "content": html_app}
-                yield {"type": "reasoning", "text": "✅ Updated research website ready!"}
-                
-                return  # Exit after generating HTML
+            elif route == "create_app":
+                # New topic - create new app
+                async for chunk in self._create_app_flow(query, files, use_web_search):
+                    yield chunk
             
-            # If route == "deep_research", continue to full deep research below
+            elif route == "update_app":
+                # Update existing app
+                async for chunk in self._update_app_flow(query, files, existing_html, use_web_search):
+                    yield chunk
+
+
+    async def _classify_first_message(self, query: str) -> dict:
+        """
+        Classifier for first message: conversation or create_app?
+        Returns: {"action": "conversation|create_app", "use_web_search": bool}
+        """
         
-        # ✅ DEEP RESEARCH (either initial query or router decided deep_research)
+        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        
+        prompt = f"""The current date is {current_date}.
+
+    User's first message: "{query}"
+
+    Determine what action to take:
+
+    1. If this is a CASUAL/GREETING message:
+    - Examples: "hi", "hello", "how are you", "hey there", "good morning"
+    - action: "conversation"
+    - use_web_search: false
+
+    2. If this is a REQUEST FOR RESEARCH/APP:
+    - Examples: "Research Apple vs Microsoft", "Create an app about cheese", "Analyze climate change"
+    - action: "create_app"
+    - use_web_search: Decide based on below
+
+    For create_app, determine if web search is needed:
+
+    Web search NEEDED (true):
+    - Current data, statistics, prices, news
+    - Comparative analysis with real numbers
+    - Time-sensitive information (2024, 2025, "latest", "current")
+
+    LLM knowledge SUFFICIENT (false):
+    - General knowledge topics ("types of cheese", "history of Rome")
+    - Creative/educational content ("build a quiz", "calculator")
+    - Conceptual explanations
+
+    Return ONLY valid JSON:
+    {{"action": "conversation|create_app", "use_web_search": true|false}}"""
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=100,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            response_text = response.content[0].text.strip()
+            
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+            
+            result = json.loads(response_text)
+            action = result.get("action", "conversation")
+            use_web_search = result.get("use_web_search", False)
+            
+            print(f"🔍 First message - Action: {action}, Web search: {use_web_search}")
+            return {"action": action, "use_web_search": use_web_search}
+        
+        except Exception as e:
+            print(f"⚠️ Classifier error: {e}, defaulting to conversation")
+            return {"action": "conversation", "use_web_search": False}
+        
+    async def _create_app_flow(self, query: str, files: Optional[List[UploadFile]], use_web_search: bool):
+        """
+        Create new app with multi-stage deep research
+        WITH or WITHOUT web search based on flag
+        """
+        
         yield {"type": "reasoning", "text": "🔍 Starting deep research process..."}
         
-        # Use global shared browser pool
         self.browser_pool = await get_browser_pool()
-        
-        # Reset query results for new deep research
-        self.query_results = []
         self.query_tables = {}
         
-        # Phase 1: Generate Level 1 queries (1-2 sub-questions)
+        # Phase 1: Generate Level 1 queries
         yield {"type": "reasoning", "text": "📊 Analyzing research question and generating main branches..."}
         level1_queries = await self._generate_level1_queries(query)
         yield {"type": "reasoning", "text": f"✅ Generated {len(level1_queries)} research branches"}
         
-        yield {"type": "reasoning", "text": "🔎 Beginning web searches for Level 1 queries..."}
-        
-        for i, q in enumerate(level1_queries, 1):
-            search_info = await self.conversation._generate_search_query(q)
-            if search_info["search_needed"] and search_info["query"]:
-                yield {"type": "search_query", "text": search_info["query"]}
-                
-                search_results = await self.conversation.google_search(search_info["query"])
-                yield {"type": "sources", "content": search_results}
-                
-                yield {"type": "reasoning", "text": f"📄 Extracting tables from Branch {i} sources..."}
-                
-                urls = [result["url"] for result in search_results[:5]]
-                if urls:
-                    tables = await self._extract_tables_from_urls(urls)
-                    if tables:
-                        self.query_tables[q] = tables
-                        yield {"type": "tables", "content": tables}
-                        yield {"type": "reasoning", "text": f"✅ Extracted {len(tables)} tables from Branch {i}"}
-        
-        yield {"type": "reasoning", "text": "🌳 Expanding branches into detailed sub-queries..."}
-        
-        # Phase 2: Generate Level 2 queries (1-2 per Level 1)
-        level2_queries = {}
-        for i, l1_query in enumerate(level1_queries, 1):
-            l2_queries = await self._generate_level2_queries(l1_query, query)
-            level2_queries[l1_query] = l2_queries
+        if use_web_search:
+            yield {"type": "reasoning", "text": "🔎 Beginning web searches for Level 1 queries..."}
             
-            yield {"type": "reasoning", "text": f"✅ Branch {i} expanded into {len(l2_queries)} sub-queries"}
-            
-            for j, q in enumerate(l2_queries, 1):
+            for i, q in enumerate(level1_queries, 1):
                 search_info = await self.conversation._generate_search_query(q)
                 if search_info["search_needed"] and search_info["query"]:
                     yield {"type": "search_query", "text": search_info["query"]}
@@ -279,21 +360,51 @@ class DeepResearch:
                     search_results = await self.conversation.google_search(search_info["query"])
                     yield {"type": "sources", "content": search_results}
                     
+                    yield {"type": "reasoning", "text": f"📄 Extracting tables from Branch {i} sources..."}
+                    
                     urls = [result["url"] for result in search_results[:5]]
                     if urls:
                         tables = await self._extract_tables_from_urls(urls)
                         if tables:
                             self.query_tables[q] = tables
                             yield {"type": "tables", "content": tables}
+                            yield {"type": "reasoning", "text": f"✅ Extracted {len(tables)} tables from Branch {i}"}
+        
+        yield {"type": "reasoning", "text": "🌳 Expanding branches into detailed sub-queries..."}
+        
+        # Phase 2: Generate Level 2 queries
+        level2_queries = {}
+        for i, l1_query in enumerate(level1_queries, 1):
+            l2_queries = await self._generate_level2_queries(l1_query, query)
+            level2_queries[l1_query] = l2_queries
+            
+            yield {"type": "reasoning", "text": f"✅ Branch {i} expanded into {len(l2_queries)} sub-queries"}
+            
+            if use_web_search:
+                for j, q in enumerate(l2_queries, 1):
+                    search_info = await self.conversation._generate_search_query(q)
+                    if search_info["search_needed"] and search_info["query"]:
+                        yield {"type": "search_query", "text": search_info["query"]}
+                        
+                        search_results = await self.conversation.google_search(search_info["query"])
+                        yield {"type": "sources", "content": search_results}
+                        
+                        urls = [result["url"] for result in search_results[:5]]
+                        if urls:
+                            tables = await self._extract_tables_from_urls(urls)
+                            if tables:
+                                self.query_tables[q] = tables
+                                yield {"type": "tables", "content": tables}
         
         total_queries = sum(len(queries) for queries in level2_queries.values())
         yield {"type": "reasoning", "text": f"✅ Data collection complete: {total_queries} queries executed"}
         
         # Phase 3: Build research data structure
-        yield {"type": "reasoning", "text": "📦 Organizing collected research data..."}
+        yield {"type": "reasoning", "text": "📦 Organizing research data..."}
         
         research_data = {
             "query": query,
+            "use_web_search": use_web_search,
             "branches": []
         }
         
@@ -309,43 +420,269 @@ class DeepResearch:
                 
                 sub_query_data = {
                     "question": l2_query,
-                    "tables": tables,
-                    "tables_count": len(tables)
+                    "tables": tables if use_web_search else [],
+                    "tables_count": len(tables) if use_web_search else 0
                 }
                 branch_data["sub_queries"].append(sub_query_data)
             
             research_data["branches"].append(branch_data)
         
-        # Store for future modifications
         self.last_research_data = research_data
         
         yield {"type": "reasoning", "text": "✅ Research data organized"}
         
-        # Phase 4: Generate interactive HTML app with all data
+        # Phase 4: Generate HTML app
         yield {"type": "reasoning", "text": "🎨 Generating interactive HTML research website..."}
         
-        html_app = await self._generate_html_app(research_data)
+        html_app = await self._create_html_app(research_data)
         
         yield {"type": "html_app", "content": html_app}
         
+        # Phase 5: ALWAYS Generate Research Summary & Methodology
         yield {"type": "reasoning", "text": "📋 Generating research methodology documentation..."}
         
-        # Phase 5: Research Summary & Methodology
+        methodology_content = await self._generate_methodology(
+            query=query,
+            level1_queries=level1_queries,
+            level2_queries=level2_queries,
+            use_web_search=use_web_search
+        )
+        
+        yield {"type": "research_summary", "content": methodology_content}
+        
+        yield {"type": "reasoning", "text": "✅ Research complete!"}
+    
+    async def _update_app_flow(
+        self, 
+        query: str, 
+        files: Optional[List[UploadFile]], 
+        existing_html: str,
+        use_web_search: bool
+    ):
+        """
+        Update existing app with or without web search
+        """
+        
+        yield {"type": "reasoning", "text": "🎨 Updating existing app..."}
+        
+        new_data = None
+        searched_queries = []
+        tables_added = []
+        
+        if use_web_search:
+            # Need to search for new data
+            yield {"type": "reasoning", "text": "🔍 Searching for new data..."}
+            
+            search_info = await self.conversation._generate_search_query(query)
+            
+            if search_info["search_needed"] and search_info["query"]:
+                yield {"type": "search_query", "text": search_info["query"]}
+                searched_queries.append(search_info["query"])
+                
+                search_results = await self.conversation.google_search(search_info["query"])
+                yield {"type": "sources", "content": search_results}
+                
+                browser_pool = await get_browser_pool()
+                urls = [result["url"] for result in search_results[:5]]
+                
+                if urls:
+                    yield {"type": "reasoning", "text": "📊 Extracting tables..."}
+                    
+                    scrape_results = await scrape_tables_parallel(
+                        urls,
+                        browser_pool=browser_pool,
+                        timeout=60000
+                    )
+                    
+                    tables = []
+                    for url, url_tables in scrape_results.items():
+                        if url_tables:
+                            for table in url_tables:
+                                tables.append({
+                                    'url': url,
+                                    'table': table
+                                })
+                    
+                    if tables:
+                        yield {"type": "tables", "content": tables}
+                        tables_added = tables
+                        new_data = {"tables": tables}
+        
+        # Update HTML (with or without new data)
+        updated_html = await self._update_html_app(existing_html, query, new_data)
+        
+        yield {"type": "html_app", "content": updated_html}
+        
+        # ALWAYS Generate Update Summary
+        yield {"type": "reasoning", "text": "📋 Generating update summary..."}
+        
+        update_summary = await self._generate_update_summary(
+            modification_request=query,
+            use_web_search=use_web_search,
+            searched_queries=searched_queries,
+            tables_added=tables_added,
+            existing_html=existing_html,
+            updated_html=updated_html
+        )
+        
+        yield {"type": "research_summary", "content": update_summary}
+        
+        yield {"type": "reasoning", "text": "✅ App updated!"}
+    
+    async def _create_html_app(self, research_data: Dict) -> str:
+        """
+        Create NEW HTML app from research data
+        Uses Opus for better instruction following
+        """
+        
+        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        
+        # Build research data context
+        content_by_branch = []
+        for i, branch in enumerate(research_data["branches"], 1):
+            branch_info = f"Branch {i}: {branch['title']}\n"
+            for j, sub_query in enumerate(branch["sub_queries"], 1):
+                branch_info += f"\n  Sub-query {i}.{j}: {sub_query['question']}\n"
+                
+                if sub_query["tables"]:
+                    branch_info += f"  Tables: {sub_query['tables_count']}\n"
+                    for idx, table in enumerate(sub_query["tables"][:10], 1):
+                        branch_info += f"\n  Table {i}.{j}.{idx} from {table['url']}:\n"
+                        branch_info += f"  {table['table']}\n"
+            
+            content_by_branch.append(branch_info)
+        
+        research_context = "\n\n".join(content_by_branch)
+        
+        html_prompt = f"""The current date is {current_date}.
+
+    Create an HTML website for: "{research_data["query"]}"
+
+    Available data:
+    {research_context}
+
+    IMPORTANT: 
+    - Do EXACTLY what the user asked for, nothing more
+    - If they asked for "blank with red bg", just give red background
+    - If they asked for research, present the data clearly
+    - Don't add unnecessary features unless requested
+    - Keep it focused on their actual request
+
+    Technical requirements:
+    - Self-contained HTML file (inline CSS/JS)
+    - Use CDN only if needed (Tailwind, Chart.js)
+    - Responsive design
+
+    Return only the HTML code."""
+
+        # ✅ Use STREAMING for Opus (required for long operations)
+        html_content = ""
+        async with self.client.messages.stream(
+            model=self.html_model,
+            max_tokens=16000,
+            messages=[{"role": "user", "content": html_prompt}]
+        ) as stream:
+            async for chunk in stream:
+                if hasattr(chunk, 'type') and chunk.type == 'content_block_delta':
+                    if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
+                        html_content += chunk.delta.text
+        
+        # Extract HTML if wrapped in code blocks
+        if "```html" in html_content:
+            html_content = html_content.split("```html")[1].split("```")[0].strip()
+        elif "```" in html_content:
+            html_content = html_content.split("```")[1].split("```")[0].strip()
+        
+        return html_content
+
+    async def _update_html_app(
+        self,
+        existing_html: str,
+        modification_request: str,
+        new_data: Optional[Dict] = None
+    ) -> str:
+        """
+        Update EXISTING HTML app with modifications
+        Uses Opus for precise updates
+        """
+        
+        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        
+        new_data_context = ""
+        if new_data and "tables" in new_data:
+            new_data_context = "\n\nNew data available:\n"
+            for idx, table in enumerate(new_data["tables"][:10], 1):
+                new_data_context += f"\nTable {idx} from {table['url']}:\n{table['table']}\n"
+        
+        update_prompt = f"""The current date is {current_date}.
+
+    User's update request: "{modification_request}"
+    {new_data_context}
+
+    Current HTML:
+    ```html
+    {existing_html}
+    ```
+
+    CRITICAL INSTRUCTIONS:
+    - Make ONLY the changes the user specifically requested
+    - If they said "make background blue", ONLY change the background color
+    - If they said "add data about X", ONLY add that data
+    - Don't redesign or modify things they didn't mention
+    - Keep all existing functionality unless asked to change it
+    - Preserve the structure and style unless specifically requested to change
+
+    Return only the complete updated HTML code."""
+
+        # ✅ Use STREAMING for Opus
+        html_content = ""
+        async with self.client.messages.stream(
+            model=self.html_model,
+            max_tokens=16000,
+            messages=[{"role": "user", "content": update_prompt}]
+        ) as stream:
+            async for chunk in stream:
+                if hasattr(chunk, 'type') and chunk.type == 'content_block_delta':
+                    if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
+                        html_content += chunk.delta.text
+        
+        # Extract HTML if wrapped in code blocks
+        if "```html" in html_content:
+            html_content = html_content.split("```html")[1].split("```")[0].strip()
+        elif "```" in html_content:
+            html_content = html_content.split("```")[1].split("```")[0].strip()
+        
+        return html_content
+
+    async def _generate_methodology(
+        self,
+        query: str,
+        level1_queries: List[str],
+        level2_queries: Dict[str, List[str]],
+        use_web_search: bool
+    ) -> str:
+        """
+        Generate research methodology summary
+        ALWAYS called for create_app flow
+        """
+        
         from simple_search_claude_streaming_with_web_search import ClaudeConversation
         methodology_conversation = ClaudeConversation()
         
-        total_searches = sum(len(queries) for queries in level2_queries.values()) + len(level1_queries)
-        total_tables = sum(len(tables) for tables in self.query_tables.values())
-        
-        query_breakdown = ""
-        for i, l1_query in enumerate(level1_queries, 1):
-            query_breakdown += f"\n**Branch {i}:** {l1_query}\n"
-            l2_queries = level2_queries.get(l1_query, [])
-            for j, l2_query in enumerate(l2_queries, 1):
-                tables_count = len(self.query_tables.get(l2_query, []))
-                query_breakdown += f"  - Sub-query {i}.{j}: {l2_query} ({tables_count} tables)\n"
-        
-        methodology_prompt = f"""Research question: "{query}"
+        if use_web_search:
+            # Methodology for web search research
+            total_searches = sum(len(queries) for queries in level2_queries.values()) + len(level1_queries)
+            total_tables = sum(len(tables) for tables in self.query_tables.values())
+            
+            query_breakdown = ""
+            for i, l1_query in enumerate(level1_queries, 1):
+                query_breakdown += f"\n**Branch {i}:** {l1_query}\n"
+                l2_queries = level2_queries.get(l1_query, [])
+                for j, l2_query in enumerate(l2_queries, 1):
+                    tables_count = len(self.query_tables.get(l2_query, []))
+                    query_breakdown += f"  - Sub-query {i}.{j}: {l2_query} ({tables_count} tables)\n"
+            
+            methodology_prompt = f"""Research question: "{query}"
 
 Research structure:
 - Branches: {len(level1_queries)}
@@ -358,161 +695,187 @@ Query breakdown:
 Create a detailed research methodology summary with:
 
 1. **Methodology Overview Table**
+   - Research approach
+   - Data sources (web search)
+   - Queries executed
+   - Tables extracted
+
 2. **Research Process Breakdown Table**
+   - Each branch and sub-queries
+   - Sources consulted per query
+   - Data quality assessment
+
 3. **Data Collection Summary**
+   - Web scraping methodology
+   - Search strategy
+   - Table extraction process
+
 4. **Quality Assessment**
+   - Source reliability
+   - Data completeness
+   - Limitations encountered
+
 5. **Step-by-step Process**
+   - Query decomposition
+   - Systematic search execution
+   - Data extraction and organization
+
 6. **Transparency & Limitations**
+   - What worked well
+   - Data gaps identified
+   - Recommendations for follow-up
 
 Be detailed and academic."""
+        
+        else:
+            # Methodology for LLM knowledge-based research
+            query_breakdown = ""
+            for i, l1_query in enumerate(level1_queries, 1):
+                query_breakdown += f"\n**Branch {i}:** {l1_query}\n"
+                l2_queries = level2_queries.get(l1_query, [])
+                for j, l2_query in enumerate(l2_queries, 1):
+                    query_breakdown += f"  - Sub-query {i}.{j}: {l2_query}\n"
+            
+            methodology_prompt = f"""Research question: "{query}"
 
+Research structure:
+- Branches: {len(level1_queries)}
+- Data source: LLM training knowledge (no web search)
+
+Query breakdown:
+{query_breakdown}
+
+Create a methodology summary explaining:
+
+1. **Methodology Overview Table**
+   - Research approach (multi-branch analysis)
+   - Data source (LLM training data, knowledge cutoff)
+   - Branches explored
+
+2. **Research Process**
+   - How the topic was broken down into branches
+   - Sub-queries developed for each branch
+   - Content generated from training knowledge
+
+3. **Knowledge Base & Limitations**
+   - Training data cutoff date
+   - Scope of available knowledge
+   - What types of information were included
+
+4. **Quality Considerations**
+   - Strengths of LLM knowledge approach
+   - Limitations (no real-time data, no specific sources)
+   - When web search would be beneficial
+
+5. **Transparency**
+   - This analysis is based on training data, not live sources
+   - No tables or current statistics included
+   - Conceptual and educational focus
+
+Be clear about the methodology used."""
+        
         methodology_content = ""
-        async for chunk in methodology_conversation.send_message(methodology_prompt, files, simple_search=False):
+        async for chunk in methodology_conversation.send_message(methodology_prompt, simple_search=False):
             if chunk["type"] == "content":
                 methodology_content += chunk["text"]
         
-        yield {"type": "research_summary", "content": methodology_content}
-        
-        yield {"type": "reasoning", "text": "✅ Deep research complete!"}
+        return methodology_content
     
-    async def _generate_html_app(self, research_data: Dict, modification_request: str = None) -> str:
+    async def _generate_update_summary(
+        self,
+        modification_request: str,
+        use_web_search: bool,
+        searched_queries: List[str],
+        tables_added: List[Dict],
+        existing_html: str,
+        updated_html: str
+    ) -> str:
         """
-        Generate self-contained interactive HTML website from research data
-        
-        Args:
-            research_data: Structured research data with branches and tables
-            modification_request: Optional modification request (e.g., "make it dark mode", "add charts")
+        Generate update summary explaining what was changed
+        ALWAYS called for update_app flow
         """
         
-        # ✅ DATE FIX
-        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        from simple_search_claude_streaming_with_web_search import ClaudeConversation
+        summary_conversation = ClaudeConversation()
         
-        # Build comprehensive prompt with all research data
-        tables_by_branch = []
-        for i, branch in enumerate(research_data["branches"], 1):
-            branch_info = f"Branch {i}: {branch['title']}\n"
-            for j, sub_query in enumerate(branch["sub_queries"], 1):
-                branch_info += f"\n  Sub-query {i}.{j}: {sub_query['question']}\n"
-                branch_info += f"  Tables: {sub_query['tables_count']}\n"
-                
-                if sub_query["tables"]:
-                    for idx, table in enumerate(sub_query["tables"][:10], 1):
-                        branch_info += f"\n  Table {i}.{j}.{idx} from {table['url']}:\n"
-                        branch_info += f"  {table['table']}\n"
-            
-            tables_by_branch.append(branch_info)
-        
-        # Add additional data if present (from modifications)
-        if "additional_data" in research_data:
-            for add_data in research_data["additional_data"]:
-                branch_info = f"\nAdditional Data: {add_data['query']}\n"
-                for idx, table in enumerate(add_data["tables"][:10], 1):
-                    branch_info += f"\n  Table {idx} from {table['url']}:\n"
-                    branch_info += f"  {table['table']}\n"
-                tables_by_branch.append(branch_info)
-        
-        research_context = "\n\n".join(tables_by_branch)
-        
-        modification_instruction = ""
-        if modification_request:
-            modification_instruction = f"""
+        # Build context about changes
+        web_search_context = ""
+        if use_web_search and searched_queries:
+            web_search_context = f"""
+**Web Search Performed:**
+- Queries executed: {len(searched_queries)}
+- Tables added: {len(tables_added)}
 
-## MODIFICATION REQUEST:
-The user has requested: "{modification_request}"
+Search queries:
+{chr(10).join(f"- {q}" for q in searched_queries)}
 
-Please incorporate this modification into the HTML design. This could be:
-- Styling changes (dark mode, colors, fonts, layout)
-- Adding new visualizations or charts
-- Including additional data sections
-- UI/UX improvements
+Tables added:
+{chr(10).join(f"- Table from {t['url']}" for t in tables_added[:5])}
 """
+        else:
+            web_search_context = "**No web search performed** - Changes based on styling/UI modifications only"
         
-        html_prompt = f"""The current date is {current_date}.
-
-Create a self-contained, interactive HTML website for this research analysis.
-
-Research Question: {research_data["query"]}
-
-Research Data:
-{research_context}
-{modification_instruction}
-
-Create a SINGLE HTML FILE with:
-
-## Design Requirements:
-- Modern, professional design with gradient backgrounds
-- Responsive layout (works on mobile and desktop)
-- Interactive navigation (tabs, accordions, or sections)
-- Data visualizations where appropriate (use Chart.js from CDN)
-- All CSS and JavaScript inline (no external files)
-- Beautiful typography and spacing
-- Smooth animations and transitions
-
-## Content Structure:
-
-1. **Hero Section**
-   - Research question as title
-   - Brief overview
-   - Key statistics (branches, queries, tables analyzed)
-
-2. **Executive Summary**
-   - Main findings across all branches
-   - Key insights in card/grid layout
-
-3. **Research Branches** (Tabbed or Accordion Interface)
-   - Tab/section for each branch
-   - Show sub-queries within each branch
-   - Display all relevant tables with styling
-   - Add insights and analysis for each section
-
-4. **Data Visualizations**
-   - Create charts from the numerical data in tables
-   - Comparison charts across branches
-   - Use Chart.js from CDN
-
-5. **Cross-Branch Analysis**
-   - Synthesis table comparing all branches
-   - Pattern identification
-   - Contradictions and gaps
-
-6. **Methodology Section**
-   - How the research was conducted
-   - Data sources
-   - Quality assessment
-
-## Technical Requirements:
-- Use Tailwind CSS from CDN for styling
-- Use Chart.js from CDN for visualizations
-- All tables should be styled and responsive
-- Add smooth scrolling and transitions
-- Include a table of contents / navigation
-- Make it visually impressive and easy to navigate
-
-## CRITICAL:
-- Include ALL tables from the research data
-- Add your analysis and insights throughout
-- Make it visually impressive and easy to navigate
-- Ensure it's a SINGLE, self-contained HTML file
-- All CDN links should use: https://cdn.jsdelivr.net/ or https://cdnjs.cloudflare.com/
-- If modification request provided, implement it fully
-
-Return ONLY the complete HTML code, no explanations."""
-
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=16000,
-            messages=[{"role": "user", "content": html_prompt}]
-        )
+        # Calculate size change
+        size_before = len(existing_html)
+        size_after = len(updated_html)
+        size_change = size_after - size_before
         
-        html_content = response.content[0].text.strip()
+        summary_prompt = f"""An HTML app was just updated based on user request.
+
+**User's modification request:** "{modification_request}"
+
+{web_search_context}
+
+**Technical details:**
+- HTML size before: {size_before} characters
+- HTML size after: {size_after} characters
+- Size change: {'+' if size_change > 0 else ''}{size_change} characters
+
+Create a comprehensive update summary with:
+
+1. **Update Summary Table**
+   | Aspect | Details |
+   |--------|---------|
+   | Modification Type | [Styling/Data Addition/Layout/etc] |
+   | Web Search Used | {use_web_search} |
+   | New Data Added | {len(tables_added)} tables |
+   | Code Size Change | {size_change} chars |
+
+2. **What Was Changed**
+   - Detailed list of modifications made
+   - If styling: what visual changes
+   - If data: what information was added
+   - If layout: what structural changes
+
+3. **Data Added** (if applicable)
+   - List of new tables/information incorporated
+   - Sources of new data
+   - How it was integrated into the app
+
+4. **Technical Details**
+   - Code modifications made
+   - New libraries/components added (if any)
+   - DOM structure changes
+   - CSS/JavaScript updates
+
+5. **Impact Assessment**
+   - How this improves the app
+   - User experience enhancements
+   - Data completeness improvements
+
+6. **Quality & Verification**
+   - Were changes successfully applied
+   - Data accuracy considerations
+   - Potential follow-up improvements
+
+Be detailed about what changed and why."""
+
+        summary_content = ""
+        async for chunk in summary_conversation.send_message(summary_prompt, simple_search=False):
+            if chunk["type"] == "content":
+                summary_content += chunk["text"]
         
-        # Extract HTML if wrapped in code blocks
-        if "```html" in html_content:
-            html_content = html_content.split("```html")[1].split("```")[0].strip()
-        elif "```" in html_content:
-            html_content = html_content.split("```")[1].split("```")[0].strip()
-        
-        return html_content
+        return summary_content
     
     async def _extract_tables_from_urls(self, urls: List[str]) -> List[Dict[str, any]]:
         """Extract tables from URLs using the scraper"""
@@ -543,7 +906,6 @@ Return ONLY the complete HTML code, no explanations."""
     async def _generate_level1_queries(self, query: str) -> List[str]:
         """Generate 1-2 broad sub-questions"""
         
-        # ✅ DATE FIX
         current_date = datetime.now().strftime("%A, %B %d, %Y")
         
         prompt = f"""The current date is {current_date}.
@@ -576,16 +938,15 @@ Format your response ONLY as a JSON array of strings:
                 response_text = response_text.split("```")[1].split("```")[0].strip()
             
             queries = json.loads(response_text)
-            return queries[:2]
+            return queries[:1]
         except:
             lines = [line.strip() for line in response_text.split('\n') if line.strip()]
             queries = [line.lstrip('0123456789.-) ') for line in lines if len(line) > 10]
-            return queries[:2]
+            return queries
     
     async def _generate_level2_queries(self, l1_query: str, original_query: str) -> List[str]:
         """Generate 1-2 specific questions for each L1 query"""
         
-        # ✅ DATE FIX
         current_date = datetime.now().strftime("%A, %B %d, %Y")
         
         prompt = f"""The current date is {current_date}.
@@ -620,8 +981,8 @@ Format your response ONLY as a JSON array of strings:
                 response_text = response_text.split("```")[1].split("```")[0].strip()
             
             queries = json.loads(response_text)
-            return queries[:2]
+            return queries
         except:
             lines = [line.strip() for line in response_text.split('\n') if line.strip()]
             queries = [line.lstrip('0123456789.-) ') for line in lines if len(line) > 10]
-            return queries[:2]
+            return queries

@@ -124,8 +124,8 @@ async function login() {
     //     ? 'https://localhost:8082'
     //     : 'https://noirai-production.up.railway.app';
 
-    const API_URL = "https://www.deepship.dev"
-    // const API_URL = "http://127.0.0.1:8082"
+    // const API_URL = "https://www.deepship.dev"
+    const API_URL = "http://127.0.0.1:8082"
     console.log('🌐 Environment:', window.location.hostname);
     console.log('🔗 API URL:', API_URL);
     
@@ -535,29 +535,68 @@ async function loadConversations() {
 
 // Replace the existing event listener for new-conversation-btn
 
-document.getElementById('new-conversation-btn').addEventListener('click', () => {
-    // Clear apps data when starting new conversation
-    window.appsData = {};
+// document.getElementById('new-conversation-btn').addEventListener('click', () => {
+//     // Clear apps data when starting new conversation
+//     window.appsData = {};
     
+//     currentConversationId = null;
+    
+//     // **FIX: Close split screen if active**
+//     if (isSplitScreenActive) {
+//         closeSplitScreen();
+//     }
+    
+//     // Clear messages in the main container (not split)
+//     const messagesContainer = document.getElementById('messages');
+//     if (messagesContainer) {
+//         messagesContainer.innerHTML = '';
+//     }
+    
+//     // Remove active class from all conversations
+//     document.querySelectorAll('.conversation-item').forEach(item => {
+//         item.classList.remove('active');
+//     });
+    
+//     // Reset to empty chat state
+//     toggleEmptyChat();
+//     updateModeIconsState();
+// });
+
+document.getElementById('new-conversation-btn').addEventListener('click', () => {
+    window.appsData = {};
     currentConversationId = null;
     
-    const container = getActiveMessagesContainer();
-    if (container) {
-        container.innerHTML = ``;
+    if (isSplitScreenActive) {
+        closeSplitScreen();
     }
     
-    // const titleElement = document.getElementById('current-conversation-title');
-    // if (titleElement) {
-    //     titleElement.textContent = 'New Conversation';
-    //     titleElement.classList.add('empty');
-    // }
+    const messagesContainer = document.getElementById('messages');
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+    }
     
-    // Remove active class from all conversations
     document.querySelectorAll('.conversation-item').forEach(item => {
         item.classList.remove('active');
     });
+    
+    window.currentConversationMode = null;
+    
+    // Reset to normal mode
+    document.querySelectorAll('.mode-icon-btn[data-mode]').forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove('mode-locked', 'active');
+        if (btn.dataset.mode === 'normal') {
+            btn.classList.add('active');
+        }
+    });
+    
+    localStorage.setItem('search_mode', 'normal');
+    updateModeIndicator('normal');
+    
+    toggleEmptyChat();
+    
+    document.getElementById('message-input')?.focus();
 });
- 
 async function selectConversation(id) {
     
     // Clear apps data when switching conversations
@@ -570,7 +609,7 @@ async function selectConversation(id) {
     
     currentConversationId = id;
     await loadMessages(id);
-    
+    updateModeIconsState()
     // Update conversation title in header
     const conv = window.allConversations?.find(c => c.id === id);
     // const titleElement = document.getElementById('current-conversation-title');
@@ -760,6 +799,19 @@ async function loadMessages(convId) {
         
         if (response.ok) {
             const messages = await response.json();
+
+            // In loadMessages, temporarily add this to see the raw data
+            console.log('Raw messages:', JSON.stringify(messages, null, 2));
+
+             if (messages && messages.length > 0) {
+            // Get first USER message's mode (not assistant)
+            const firstUserMsg = messages.find(m => m.role === 'user');
+            window.currentConversationMode = firstUserMsg?.mode || messages[0].mode || null;
+            console.log('📋 First message mode:', window.currentConversationMode);
+            } else {
+                window.currentConversationMode = null;
+            }
+            
             console.log('');
             console.log('✅ Messages loaded:', messages.length);
             console.log('   - Full messages array:', messages);
@@ -1424,6 +1476,7 @@ function showSplitScreen(appHtml) {
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
+                            Close
                         </button>
 
                     <div style="display: flex; gap: 8px; align-items: center;">
@@ -1883,27 +1936,51 @@ function updateSplitAppSelector(msgId) {
 // }
 
 function loadAppInSplit(htmlContent) {
+    
+    // Scrollbar styles to inject into iframe
+    const scrollbarStyles = `
+        <style>
+            ::-webkit-scrollbar {
+                width: 8px !important;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent !important;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #555 !important;
+                border-radius: 4px !important;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #666 !important;
+            }
+            * {
+                scrollbar-width: thin !important;
+                scrollbar-color: #555 transparent !important;
+            }
+        </style>
+    `;
          
     // Load preview
     const iframe = document.getElementById('split-preview-iframe');
+    
+    // Check if content is markdown
+    const isMarkdown = !htmlContent.trim().startsWith('<') && !htmlContent.trim().toLowerCase().startsWith('<!doctype');
+    
     if (iframe) {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
         iframeDoc.open();
         
-        // Check if content is markdown (doesn't start with < or <!DOCTYPE)
-        const isMarkdown = !htmlContent.trim().startsWith('<') && !htmlContent.trim().toLowerCase().startsWith('<!doctype');
-        
         if (isMarkdown && typeof marked !== 'undefined') {
-            // Render markdown as HTML with proper structure
             const renderedHtml = `
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    ${scrollbarStyles}
                     <style>
                         body {
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                             line-height: 1.6;
                             padding: 20px;
                             max-width: 800px;
@@ -1911,139 +1988,88 @@ function loadAppInSplit(htmlContent) {
                             color: #333;
                             background: #F6F5EF;
                             font-size: 14px;
-                            
-                        }
-                        h1, h2, h3, h4, h5, h6 {
-                            margin-top: 24px;
-                            margin-bottom: 16px;
-                            font-weight: 600;
-                        }
-                        p {
-                            margin-bottom: 16px;
-                        }
-                        code {
-                            background: #f6f8fa;
-                            padding: 2px 6px;
-                            border-radius: 3px;
-                            font-family: 'Courier New', monospace;
-                            font-size: 0.9em;
-                        }
-                        pre {
-                            background: #f6f8fa;
-                            padding: 16px;
-                            border-radius: 6px;
-                            overflow-x: auto;
-                        }
-                        pre code {
-                            background: none;
-                            padding: 0;
-                        }
-                        a {
-                            color: #0366d6;
-                            text-decoration: none;
-                        }
-                        a:hover {
-                            text-decoration: underline;
-                        }
-                        img {
-                            max-width: 100%;
-                            height: auto;
-                        }
-                        blockquote {
-                            border-left: 4px solid #dfe2e5;
-                            padding-left: 16px;
-                            margin-left: 0;
-                            color: #6a737d;
-                        }
-                        table {
-                            border-collapse: collapse;
-                            width: 100%;
-                            margin-bottom: 16px;
-                        }
-                        table th, table td {
-                            border: 1px solid #dfe2e5;
-                            padding: 8px 12px;
-                        }
-                        table th {
-                            background: #f6f8fa;
-                            font-weight: 600;
                         }
                     </style>
                 </head>
-                <body>
-                    ${marked.parse(htmlContent)}
-                </body>
+                <body>${marked.parse(htmlContent)}</body>
                 </html>
             `;
             iframeDoc.write(renderedHtml);
         } else {
-            // For HTML content, inject background style if not present
             let modifiedHtml = htmlContent;
             
-            // Check if HTML has a body tag
-            if (modifiedHtml.includes('<body')) {
-                // Add background style to existing body tag
-                modifiedHtml = modifiedHtml.replace(
-                    /<body([^>]*)>/i,
-                    '<body$1 style="background: #1a1a1a; margin: 0; padding: 0;">'
-                );
-            } else if (modifiedHtml.includes('<html')) {
-                // Has HTML tag but no body, add body wrapper
-                modifiedHtml = modifiedHtml.replace(
-                    '</html>',
-                    '<style>body { background: #1a1a1a; margin: 0; padding: 0; }</style></html>'
-                );
-            } else {
-                // No HTML structure, wrap it
-                modifiedHtml = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <style>
-                            body {
-                                background: #1a1a1a;
-                                margin: 0;
-                                padding: 0;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${htmlContent}
-                    </body>
-                    </html>
-                `;
+            // Inject scrollbar styles into HTML content
+            if (modifiedHtml.includes('</head>')) {
+                modifiedHtml = modifiedHtml.replace('</head>', `${scrollbarStyles}</head>`);
+            } else if (modifiedHtml.includes('<body')) {
+                modifiedHtml = modifiedHtml.replace(/<body/i, `${scrollbarStyles}<body`);
             }
             
+            if (modifiedHtml.includes('<body')) {
+                modifiedHtml = modifiedHtml.replace(/<body([^>]*)>/i, '<body$1 style="background: #F6F5EF; margin: 0; padding: 0;">');
+            } else if (modifiedHtml.includes('<html')) {
+                modifiedHtml = modifiedHtml.replace('</html>', `${scrollbarStyles}<style>body { background: #F6F5EF; margin: 0; padding: 0; }</style></html>`);
+            } else {
+                modifiedHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">${scrollbarStyles}<style>body{background:#F6F5EF;margin:0;padding:0;}</style></head><body>${htmlContent}</body></html>`;
+            }
             iframeDoc.write(modifiedHtml);
         }
-        
         iframeDoc.close();
-    } 
+    }
     
-    // Only load HTML code if code tab should be shown (lab mode)
-    if (shouldShowCodeTab()) {
-        const codeBlock = document.getElementById('split-html-code');
-        if (codeBlock) {
-            codeBlock.textContent = htmlContent;
-            codeBlock.className = 'language-markup';
-            delete codeBlock.dataset.highlighted;
-             
-            if (typeof Prism !== 'undefined') {
-                const splitRight = document.querySelector('.split-right');
-                if (splitRight) {
-                    splitRight.querySelectorAll('code[data-highlighted="yes"]').forEach(block => {
-                        delete block.dataset.highlighted;
-                    });
-                    Prism.highlightAllUnder(splitRight);
+    // ============================================
+    // ALWAYS CREATE/UPDATE CODE TAB
+    // ============================================
+    const splitContainer = document.getElementById('split-screen-container');
+    if (splitContainer) {
+        const contentArea = splitContainer.querySelector('.split-content-area');
+        
+        if (contentArea) {
+            // Check if code tab exists
+            let codeTabContent = contentArea.querySelector('[data-content="code"]');
+            
+            // Dynamic label based on content type
+            const copyLabel = isMarkdown ? 'Copy MD' : 'Copy HTML';
+            
+            if (!codeTabContent) {
+                // Create it
+                codeTabContent = document.createElement('div');
+                codeTabContent.className = 'split-tab-content';
+                codeTabContent.setAttribute('data-content', 'code');
+                codeTabContent.style.cssText = 'position: relative; height: 100%; display: none;';
+                codeTabContent.innerHTML = `
+                    <pre style="margin:0; padding:16px; background:#1e1e1e; height:100%; overflow:auto; box-sizing:border-box;">
+                        <code class="language-markup" id="split-html-code" style="font-family:'Roboto Mono',monospace; font-size:12px; line-height:1.6; color:#d4d4d4; white-space:pre-wrap; word-break:break-word;"></code>
+                    </pre>
+                    <button onclick="copySplitHtml()" class="split-copy-btn">
+                        ${copyLabel}
+                    </button>
+                `;
+                contentArea.appendChild(codeTabContent);
+            } else {
+                // Update button label if tab already exists
+                const copyBtn = codeTabContent.querySelector('.split-copy-btn');
+                if (copyBtn) {
+                    copyBtn.textContent = copyLabel;
                 }
+            }
+            
+            // Update code content
+            const codeBlock = document.getElementById('split-html-code');
+            if (codeBlock) {
+                codeBlock.textContent = htmlContent;
+                codeBlock.className = 'language-markup';
+                
+                setTimeout(() => {
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightElement(codeBlock);
+                    }
+                }, 100);
             }
         }
     }
-
-    
 }
+
 //  function closeSplitScreen() {
 //     isSplitScreenActive = false;
 //     currentAppHtml = null;
@@ -2872,7 +2898,7 @@ function appendMessage(role, content, isStreaming = false, sources = null, reaso
             tabsHtml += `<button class="response-tab ${defaultActiveTab === 'sources' ? 'active' : ''}" data-tab="sources">Sources</button>`;
         }
         if (hasSteps) {
-            tabsHtml += `<button class="response-tab ${defaultActiveTab === 'steps' ? 'active' : ''}" data-tab="steps">Research Steps</button>`;
+            tabsHtml += `<button class="response-tab ${defaultActiveTab === 'steps' ? 'active' : ''}" data-tab="steps">Steps</button>`;
         }
         if (hasAssets) {
             tabsHtml += `<button class="response-tab ${defaultActiveTab === 'assets' ? 'active' : ''}" data-tab="assets">Assets</button>`;
@@ -3110,7 +3136,7 @@ function appendMessage(role, content, isStreaming = false, sources = null, reaso
     }
     
     toggleEmptyChat();
-    
+    updateModeIconsState()
     return messageDiv;
 }
 
@@ -3730,6 +3756,18 @@ async function sendMessage() {
     }
 
     if (!content && attachedFiles.length === 0) return;
+
+      const currentMode = localStorage.getItem('search_mode') || 'normal';
+    document.querySelectorAll('.mode-icon-btn[data-mode]').forEach(btn => {
+        btn.classList.remove('active', 'mode-locked');
+        if (btn.dataset.mode === currentMode) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.add('mode-locked');
+            btn.disabled = true;
+        }
+    });
+    
     const sendBtn = document.getElementById('send-btn');
     const fileBtn = document.getElementById('file-upload-btn');
     sendBtn.disabled = true;
@@ -4246,6 +4284,8 @@ async function sendMessage() {
 
     sendBtn.disabled = false;
     if (fileBtn) fileBtn.disabled = false;
+
+    updateModeIconsState()
 }
 
 function setStreamingToDone(streamingDiv) {
@@ -5338,6 +5378,7 @@ async function switchMode(mode) {
     console.log(`🔄 Switching to mode: ${mode}`);
     localStorage.setItem('search_mode', mode);
      
+    updateModeIndicator(mode);
 
     modeelem = document.getElementById('mode')   
     modeelem.innerHTML = mode
@@ -6508,6 +6549,25 @@ function downloadAppVersion(messageId, versionIndex) {
     document.body.removeChild(a);
 }
 
+// function updateModeIndicator(mode) {
+//     const inputWrapper = document.querySelector('.input-wrapper');
+//     const modeLabels = {
+//         'normal': 'NORMAL',
+//         'deep': 'DEEP SEARCH',
+//         'lab': 'LAB MODE',
+//         'voice': 'VOICE'
+//     };
+
+//     if(isUserLoggedIn())
+//     { 
+//         inputWrapper.setAttribute('data-mode-label', modeLabels[mode] || 'NORMAL');
+//     }
+//     else
+//     {
+//          inputWrapper.setAttribute('data-mode-label',  'NORMAL');
+//     }
+// }
+
 function updateModeIndicator(mode) {
     const inputWrapper = document.querySelector('.input-wrapper');
     const modeLabels = {
@@ -6517,20 +6577,19 @@ function updateModeIndicator(mode) {
         'voice': 'VOICE'
     };
 
-    if(isUserLoggedIn())
-    { 
-        inputWrapper.setAttribute('data-mode-label', modeLabels[mode] || 'NORMAL');
-    }
-    else
-    {
-         inputWrapper.setAttribute('data-mode-label',  'NORMAL');
-    }
+    const label = modeLabels[mode] || modeLabels[mode?.toLowerCase()] || 'NORMAL';
+    inputWrapper.setAttribute('data-mode-label', label);
+    console.log('📝 Mode label set to:', label);
 }
-
 
 // Add this to your existing mode button click handlers
 document.querySelectorAll('.mode-icon-btn[data-mode]').forEach(btn => {
     btn.addEventListener('click', function() {
+         e.preventDefault();
+        if (this.classList.contains('mode-locked') || this.disabled) {
+            console.log('🔒 Mode is locked, cannot switch');
+            return;
+        }
         const mode = this.getAttribute('data-mode');
         
         // Remove active class from all
@@ -6547,8 +6606,10 @@ document.querySelectorAll('.mode-icon-btn[data-mode]').forEach(btn => {
 });
 
 // Initialize on page load
-updateModeIndicator('normal');
-
+// updateModeIndicator('normal');
+if (!window.currentConversationMode) {
+    updateModeIndicator('normal');
+}
 // Conversations Panel Functions
 function openConversationsPanel() {
     document.getElementById('conversations-selection-panel').classList.add('active');
@@ -8512,4 +8573,212 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
- 
+document.querySelectorAll('[id*="close"], [id*="Close"]').forEach(btn => {
+    btn.innerHTML = 'Close';
+});
+
+// Fix for preview/code tab switching
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.split-tabs button.preview, .split-tabs button.code');
+    if (!btn) return;
+    
+    const splitContainer = document.getElementById('split-screen-container');
+    if (!splitContainer) return;
+    
+    const targetTab = btn.dataset.tab;
+    
+    // Toggle active class on buttons
+    splitContainer.querySelector('.split-tabs button.preview')?.classList.remove('active');
+    splitContainer.querySelector('.split-tabs button.code')?.classList.remove('active');
+    btn.classList.add('active');
+    
+    // Toggle content visibility
+    splitContainer.querySelectorAll('.split-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    const targetContent = splitContainer.querySelector(`[data-content="${targetTab}"]`);
+    if (targetContent) {
+        targetContent.classList.add('active');
+    }
+    
+    // Re-highlight code if switching to code tab
+    if (targetTab === 'code') {
+        setTimeout(() => {
+            const codeBlock = document.getElementById('split-html-code');
+            if (codeBlock && typeof Prism !== 'undefined') {
+                Prism.highlightElement(codeBlock);
+            }
+        }, 50);
+    }
+});
+
+// Close main-panel when clicking outside
+document.addEventListener('click', function(e) {
+    const mainPanel = document.getElementById('main-panel');
+    
+    if (!mainPanel || mainPanel.classList.contains('collapsed')) return;
+    
+    // Check if click is inside the panel
+    const isClickInsidePanel = mainPanel.contains(e.target);
+    
+    // Don't close if clicking on panel toggle buttons
+    const toggleBtn = document.getElementById('toggleBtn');
+    const panelToggleBtn = document.getElementById('panel-toggle-btn');
+    const isClickOnToggle = toggleBtn?.contains(e.target) || panelToggleBtn?.contains(e.target);
+    
+    if (!isClickInsidePanel && !isClickOnToggle) {
+        mainPanel.classList.add('collapsed');
+        localStorage.setItem('conversations_panel_collapsed', 'true');
+        console.log('Main panel closed - clicked outside');
+    }
+});
+
+
+// Re-focus message input after clicking on messages
+document.addEventListener('click', function(e) {
+    // Skip if clicking on interactive elements that need focus
+    if (e.target.closest('button, a, select, input, textarea, iframe, .conversation-item, .response-tab, .export-option, .export-btn, .action-btn, .split-tab, .delete-btn')) {
+        return;
+    }
+    
+    // Small delay to let other click handlers finish
+    setTimeout(() => {
+        const messageInput = document.getElementById('message-input');
+        if (messageInput && !messageInput.disabled) {
+            messageInput.focus();
+        }
+    }, 50);
+});
+
+// Re-focus after selecting a conversation
+const originalSelectConversation = selectConversation;
+selectConversation = async function(id) {
+    await originalSelectConversation(id);
+    setTimeout(() => {
+        document.getElementById('message-input')?.focus();
+    }, 200);
+};
+
+// Re-focus after loading messages
+const originalLoadMessages = loadMessages;
+loadMessages = async function(convId) {
+    await originalLoadMessages(convId);
+    setTimeout(() => {
+        document.getElementById('message-input')?.focus();
+    }, 200);
+};
+
+// Re-focus input when clicking on messages area
+document.querySelector('.messages, #messages, #split-messages')?.addEventListener('click', function(e) {
+    if (e.target.closest('button, a, select, .response-tab, .export-option')) {
+        return;
+    }
+    
+    setTimeout(() => {
+        document.getElementById('message-input')?.focus();
+    }, 50);
+});
+// ============================================
+// MODE ICONS STATE MANAGEMENT
+// ============================================
+
+function updateModeIconsState() {
+    const container = getActiveMessagesContainer();
+    const messages = container ? container.querySelectorAll('.message') : [];
+    
+    console.log('=== updateModeIconsState ===');
+    console.log('Messages count:', messages.length);
+    console.log('window.currentConversationMode:', window.currentConversationMode);
+    
+    const activeBtn = document.querySelector('.mode-icon-btn[data-mode].active');
+    console.log('Active button mode:', activeBtn?.dataset.mode);
+    console.log('localStorage search_mode:', localStorage.getItem('search_mode'));
+    
+    if (messages.length === 0) {
+        // No messages - unlock all
+        document.querySelectorAll('.mode-icon-btn[data-mode]').forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('mode-locked');
+        });
+        
+        // Clear conversation mode
+        window.currentConversationMode = null;
+        
+        const currentMode = activeBtn?.dataset.mode || localStorage.getItem('search_mode') || 'normal';
+        console.log('No messages - setting label to:', currentMode);
+        updateModeIndicator(currentMode);
+        return;
+    }
+    
+    const firstMsgMode = window.currentConversationMode || null;
+    
+    console.log('First message mode:', firstMsgMode);
+    
+    if (!firstMsgMode) {
+        // No mode saved - use current active
+        const currentMode = activeBtn?.dataset.mode || localStorage.getItem('search_mode') || 'normal';
+        console.log('No firstMsgMode - setting label to:', currentMode);
+        updateModeIndicator(currentMode);
+        return;
+    }
+    
+    // Map backend mode names to frontend (case-insensitive)
+    const modeMap = {
+        'deep_search': 'deep',
+        'deep': 'deep',
+        'lab': 'lab',
+        'normal': 'normal',
+        'voice': 'voice'
+    };
+    
+    const frontendMode = modeMap[firstMsgMode.toLowerCase()] || firstMsgMode.toLowerCase();
+    
+    console.log('Frontend mode:', frontendMode);
+    
+    // Lock to first message's mode
+    document.querySelectorAll('.mode-icon-btn[data-mode]').forEach(btn => {
+        btn.classList.remove('active', 'mode-locked');
+        btn.disabled = false;
+        
+        if (btn.dataset.mode === frontendMode) {
+            btn.classList.add('active');
+            console.log('Set active:', btn.dataset.mode);
+        } else {
+            btn.classList.add('mode-locked');
+            btn.disabled = true;
+            console.log('Locked:', btn.dataset.mode);
+        }
+    });
+    
+    // Update the label
+    console.log('Calling updateModeIndicator with:', frontendMode);
+    updateModeIndicator(frontendMode);
+}
+
+function updateModeIndicator(mode) {
+    console.log('=== updateModeIndicator ===');
+    console.log('Received mode:', mode);
+    
+    const inputWrapper = document.querySelector('.input-wrapper');
+    
+    if (!inputWrapper) {
+        console.log('ERROR: inputWrapper not found!');
+        return;
+    }
+    
+    const modeLabels = {
+        'normal': 'NORMAL',
+        'deep': 'DEEP SEARCH',
+        'lab': 'LAB MODE',
+        'voice': 'VOICE'
+    };
+
+    const label = modeLabels[mode] || modeLabels[mode?.toLowerCase()] || 'NORMAL';
+    console.log('Setting data-mode-label to:', label);
+    
+    inputWrapper.setAttribute('data-mode-label', label);
+    
+    // Verify it was set
+    console.log('Verified attribute:', inputWrapper.getAttribute('data-mode-label'));
+}

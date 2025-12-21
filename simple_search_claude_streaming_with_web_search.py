@@ -169,15 +169,16 @@ Generate the response:"""
         
         return {"search_needed": False, "query": None}
     
-    async def send_message(self, user_message: str, files: Optional[List[UploadFile]] = None, max_iterations: int = 5):
+    async def send_message(self, user_message: str, files: Optional[List[UploadFile]] = None, max_iterations: int = 5, simple_search = True):
         from datetime import datetime
         current_date = datetime.now().strftime("%B %d, %Y")
         
-        # First: Generate search query quickly using only user prompts
-        search_info = await self._generate_search_query(user_message)
-        if search_info["search_needed"] and search_info["query"]:
-            yield {"type": "search_query", "text": search_info["query"]}
-        
+        if simple_search:
+            # First: Generate search query quickly using only user prompts
+            search_info = await self._generate_search_query(user_message)
+            if search_info["search_needed"] and search_info["query"]:
+                yield {"type": "search_query", "text": search_info["query"]}
+                    
         # Process uploaded files
         message_content = []
         if files:
@@ -245,7 +246,7 @@ Generate the response:"""
                     "content": history_content
                 })
                 break
-                    
+            
             except Exception as e:
                 raise
     
